@@ -25,19 +25,25 @@ def web_search(query: str) -> str:
     try:
         # DeepSeek Responses API 的 web_search 是服务端执行的内置工具，
         # 不需要再配置 DashScope/Tavily 等第二个搜索 Key。
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        tracking_id = get_env("DEEPSEEK_TRACKING_ID", "")
+        tracking_header = get_env("DEEPSEEK_TRACKING_HEADER", "")
+        if tracking_id and tracking_header:
+            headers[tracking_header] = tracking_id
+
         response = httpx.post(
             get_env(
                 "DEEPSEEK_RESPONSES_URL",
                 "https://api.deepseek.com/responses",
             ),
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
+            headers=headers,
             json={
                 # 搜索接口只接受 DeepSeek 搜索模型；不要复用可能仍是
                 # qwen3.8-27b 等旧配置的 LLM_MODEL。
-                "model": get_env("WEB_SEARCH_MODEL", "deepseek-flash"),
+                "model": get_env("WEB_SEARCH_MODEL", "deepseek-v4-pro"),
                 "instructions": (
                     "你是一个联网搜索助手。请使用 web_search 获取最新、可靠的信息，"
                     "用中文总结结果；如果搜索结果不足或无法确认，请明确说明。"
