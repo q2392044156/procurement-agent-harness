@@ -31,6 +31,15 @@ cd ..\smart-procurement-platform
 .\scripts\demo-up.ps1 -Agent
 ```
 
+## P1 完善（本轮）
+
+- RAG：向量 + 字符 bigram 混合检索；可见性前置过滤断言；`kb-state` 卷持久化增量状态；
+- 工具：统一 `errorType/retryable`；写工具支持 `idempotency_key`、结构化 `items`、`verified` 标记、单次 20 条上限；
+- 可观测：trace 10MB 轮转、`byThread` 聚合、模型 token/成本估算；
+- 安全：`/api/chat` 每用户限流、提示注入边界、记忆 PII 脱敏、MongoDBStore 唯一索引修复、seccomp 安全沙箱；
+- 评测：live 场景 10→31（31/31），S4 9/9、S5 10/10、S6 7/7；
+- CI：新增 `.github/workflows/harness-ci.yml`。
+
 ## 下一步
 
 1. 云服务器部署并按 `docs/DEPLOYMENT.md` 验证；
