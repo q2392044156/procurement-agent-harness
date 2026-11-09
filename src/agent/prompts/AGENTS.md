@@ -17,6 +17,12 @@
 - 分析：`inventory_risk` / `spend_analysis` / `approval_sla` / `price_trend`
 - 知识库：`kb_search` / `kb_get_document` / `kb_cite`
 
+### 物资模糊检索规则
+- 优先调用 `part_search(q=..., brand=..., category=..., specification=...)`；
+  `q` 会同时匹配编码、名称、品牌、规格、分类。
+- 无结果时逐层放宽：品牌/规格 → 分类 → 名称；仍无结果明确回复“没有匹配”，不要编造型号或价格。
+- 库存、价格、供应商必须用 `inventory_page` / `part_query` / `supplier_query` 实时查询。
+
 ### 自定义工具
 - `generate_chart` / `generate_document` / `generate_table_report`：图表与文档
 - `web_search` / `web_fetch`：联网检索

@@ -177,6 +177,23 @@ async def main() -> int:
         data, ms = await call(name, args)
         await check(name, data.get("code") == 0, f"args={args}", ms)
 
+    # 模糊检索：编码/名称/品牌/规格/分类统一命中
+    for keyword in ["联想", "车间", "IP65", "6308"]:
+        data, ms = await call("part_search", {"q": keyword})
+        rows = data.get("data") or []
+        await check(f"part_search q={keyword}", data.get("code") == 0 and len(rows) > 0,
+                    f"rows={len(rows)}", ms)
+
+    data, ms = await call("part_search", {"brand": "NSK"})
+    rows = data.get("data") or []
+    await check("part_search brand=NSK", data.get("code") == 0 and len(rows) > 0,
+                f"rows={len(rows)}", ms)
+
+    data, ms = await call("part_page", {"q": "轴承", "size": 5})
+    rows = page(data).get("records") or []
+    await check("part_page q=轴承", data.get("code") == 0 and len(rows) > 0,
+                f"rows={len(rows)}", ms)
+
     summary = {
         "platform": PLATFORM,
         "cases": len(cases),
