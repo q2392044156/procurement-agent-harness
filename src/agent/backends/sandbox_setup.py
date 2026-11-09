@@ -130,10 +130,10 @@ def create_secure_sandbox(config: SandboxConfig | None = None) -> CustomOpenSand
         # 仅添加运行必需的最小 Capability
         host_config_kwargs["cap_add"] = ["CHOWN", "SETUID", "SETGID", "DAC_OVERRIDE"]
 
-    # seccomp 安全策略
+    # seccomp 安全策略：Docker API 的 security_opt 需要 JSON 内容，而不是文件路径
     security_opts = []
     if seccomp_profile:
-        security_opts.append(f"seccomp={seccomp_path}")
+        security_opts.append(f"seccomp={seccomp_profile}")
     security_opts.append("no-new-privileges:true")
     host_config_kwargs["security_opt"] = security_opts
 
