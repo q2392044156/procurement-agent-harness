@@ -64,7 +64,7 @@ async def main() -> int:
     from src.kb.sync import sync
 
     summary = sync("1")
-    check("kb sync", summary["documentsAdded"] >= 1 and summary["totalPoints"] >= 1,
+    check("kb sync", summary["totalPoints"] >= 20,
           f"added={summary['documentsAdded']} points={summary['totalPoints']}")
 
     admin_id = login("admin", "Admin@123")

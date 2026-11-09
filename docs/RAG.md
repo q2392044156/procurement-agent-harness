@@ -43,7 +43,7 @@ changed?since=上次同步时间
 | `QDRANT_URL` | `http://localhost:6333` | 容器内为 `http://qdrant:6333` |
 | `KB_COLLECTION` | `procurement_kb` | 集合名 |
 | `KB_EMBEDDING_MODEL` | `BAAI/bge-m3` | 本地 CPU，首次下载约 2.2GB |
-| `KB_TOP_K` / `KB_MIN_SCORE` | `8` / `0.35` | 召回数量与拒答阈值 |
+| `KB_TOP_K` / `KB_MIN_SCORE` | `8` / `0.40` | 召回数量与拒答阈值 |
 | `HF_ENDPOINT` | `https://hf-mirror.com` | 国内镜像 |
 | `HF_HOME` | 默认缓存目录 | 建议放在大磁盘 |
 
@@ -61,8 +61,8 @@ conda run -n procurement python scripts/verify_phase_s4.py
 
 ## 6. 已知限制
 
-- 当前示例语料 2 份；50 问评测集计划在 S6 与业务评测一起补齐；
-- 未接 rerank 模型，仅用分数阈值；
+- 语料 20 份：2 份真实示例 + 18 份评测语料；50 问评测结果见 [EVAL_RAG.md](EVAL_RAG.md)；
+- 未接 rerank 模型，仅用分数阈值（0.40 为当前语料标定值）；
 - DOCX 无分页信息，页码固定为 1；扫描件 PDF 未做 OCR；
 - 表格按纯文本抽取，结构可能丢失。
 
