@@ -28,7 +28,7 @@ def register_parts_tools(mcp: FastMCP):
         """根据名称关键字搜索零部件。
 
         Args:
-            name: 零件名称关键字，例如"火花塞"、"刹车片"、"滤芯"
+            name: 零件名称关键字，例如"深沟球轴承"、"接近传感器"、"滤芯"
 
         Returns:
             匹配的零部件列表JSON

@@ -1,0 +1,119 @@
+{
+  "documents": [
+    {
+      "file": "01-IT办公与机房设备选型验收规范.docx",
+      "title": "IT办公与机房设备选型验收规范",
+      "category": "PROCEDURE",
+      "summary": "笔记本、显示器、服务器、交换机、UPS 与扩展坞的选型、到货验收和质保要求",
+      "tags": "IT设备,选型,验收,质保",
+      "sources": [
+        "https://www.osha.gov/personal-protective-equipment"
+      ]
+    },
+    {
+      "file": "02-工业物资分类编码与主数据规范.docx",
+      "title": "工业物资分类编码与主数据规范",
+      "category": "PROCEDURE",
+      "summary": "工业物资分类树、物料编码、属性模板、计量单位与库存追踪方式",
+      "tags": "主数据,分类,编码,追踪方式",
+      "sources": []
+    },
+    {
+      "file": "03-MRO轴承选型与验收规范.docx",
+      "title": "MRO轴承选型与验收规范",
+      "category": "PROCEDURE",
+      "summary": "深沟球轴承 6205/6308 的尺寸、游隙、密封、安装与到货检验",
+      "tags": "轴承,SKF,6205,6308,验收",
+      "sources": [
+        "https://www.skf.com/group/products/rolling-bearings/ball-bearings/deep-groove-ball-bearings/productid-6205"
+      ]
+    },
+    {
+      "file": "04-电机与传感器采购技术规范.docx",
+      "title": "电机与传感器采购技术规范",
+      "category": "PROCEDURE",
+      "summary": "三相异步电机、接近传感器的效率、防护、接线与验收",
+      "tags": "电机,传感器,IE3,IP67,PNP",
+      "sources": [
+        "https://pubdb.bfe.admin.ch/de/publication/download/11544"
+      ]
+    },
+    {
+      "file": "05-数控设备验收与精度检验规范.docx",
+      "title": "数控设备验收与精度检验规范",
+      "category": "PROCEDURE",
+      "summary": "立式加工中心的几何精度、定位精度、重复定位精度与 72 小时试运行",
+      "tags": "数控设备,CNC,ISO230,验收",
+      "sources": [
+        "https://knowledge.bsigroup.com/products/test-code-for-machine-tools-determination-of-accuracy-and-repeatability-of-positioning-of-numerically-controlled-axes"
+      ]
+    },
+    {
+      "file": "06-工业机器人安全与验收规范.docx",
+      "title": "工业机器人安全与验收规范",
+      "category": "PROCEDURE",
+      "summary": "六轴机器人风险评价、安全防护、CE/ISO 10218 与验收",
+      "tags": "工业机器人,ISO10218,安全,验收",
+      "sources": [
+        "https://www.evs.ee/en/iso-10218-1-2025"
+      ]
+    },
+    {
+      "file": "07-压缩空气系统与空压机采购规范.docx",
+      "title": "压缩空气系统与空压机采购规范",
+      "category": "PROCEDURE",
+      "summary": "22kW 螺杆空压机、露点/含油/颗粒度与 ISO 8573-1 验收",
+      "tags": "空压机,压缩空气,ISO8573,动力设备",
+      "sources": [
+        "https://store.sfs.fi/en/iso-8573-1-2010-3"
+      ]
+    },
+    {
+      "file": "08-劳保用品采购与验收规范.docx",
+      "title": "劳保用品采购与验收规范",
+      "category": "PROCEDURE",
+      "summary": "防切割手套、安全帽、护目镜的 EN388/EN166/EN397 选型与批次验收",
+      "tags": "劳保,PPE,EN388,EN166,EN397",
+      "sources": [
+        "https://www.osha.gov/personal-protective-equipment",
+        "https://www.cencenelec.eu/"
+      ]
+    },
+    {
+      "file": "09-紧固件与密封件验收规范.docx",
+      "title": "紧固件与密封件验收规范",
+      "category": "PROCEDURE",
+      "summary": "8.8 级螺栓、NBR 油封的材质、性能等级、尺寸与批次验收",
+      "tags": "紧固件,密封件,ISO898,NBR",
+      "sources": [
+        "https://www.trfastenings.com/knowledge-base/metric-screws/screws-and-bolts-mechanical-properties"
+      ]
+    },
+    {
+      "file": "10-工业物资供应商准入与绩效评价办法.docx",
+      "title": "工业物资供应商准入与绩效评价办法",
+      "category": "SUPPLIER",
+      "summary": "供应商资质、现场审核、样品承认、季度评分与退出机制",
+      "tags": "供应商,准入,ISO9001,绩效",
+      "sources": [
+        "https://committee.iso.org/sites/tc176sc2/home/projects/published/iso-9001-2015.html"
+      ]
+    },
+    {
+      "file": "11-备件库存与安全库存管理规范.docx",
+      "title": "备件库存与安全库存管理规范",
+      "category": "PROCEDURE",
+      "summary": "ABC/XYZ 分类、安全库存公式、补货点、寄售与呆滞料处理",
+      "tags": "库存,安全库存,备件,ABC",
+      "sources": []
+    },
+    {
+      "file": "12-工业物资价格分析与合同条款指引.docx",
+      "title": "工业物资价格分析与合同条款指引",
+      "category": "POLICY",
+      "summary": "成本拆解、比价、价格调整、质保、交付与违约条款",
+      "tags": "价格分析,合同,成本,采购",
+      "sources": []
+    }
+  ]
+}

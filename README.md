@@ -79,7 +79,7 @@ flowchart LR
 
 ### 2.4 知识库问答（RAG）
 
-- 20 份制度文档、23 个切片，bge-m3（1024 维）+ Qdrant；
+- 20 份制度文档 + 12 份工业物资规范，bge-m3（1024 维）+ Qdrant，dense+BM25 混合检索；
 - 检索前按 `visible-doc-ids` 过滤，回答带 `《标题》第N页` 引用；
 - 无依据时返回空结果，明确拒答；
 - 增量同步：`changed?since` + 每文档版本去重。
@@ -251,7 +251,9 @@ curl http://localhost:8000/health
 
 ```powershell
 conda activate procurement
-python scripts/seed_kb_documents.py   # 上传并发布 20 份文档
+python scripts/seed_kb_documents.py   # 上传并发布 20 份制度文档
+python scripts/generate_industrial_corpus.py
+python scripts/seed_industrial_kb.py  # 上传 12 份工业物资规范
 python scripts/kb_ingest.py           # 解析、bge-m3 向量化、写入 Qdrant
 ```
 

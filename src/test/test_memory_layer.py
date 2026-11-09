@@ -169,24 +169,24 @@ def test_extract_chart_and_output_preferences():
 def test_extract_recent_suppliers_from_tool_calls():
     """P0-2：README 写了但原来没实现的 recent_suppliers / recent_queries。"""
     messages = [
-        Msg("human", "查一下恒力机械的供货情况"),
+        Msg("human", "查一下精工工业备件的供货情况"),
         Msg("ai", "", tool_calls=[
-            {"name": "supplier_query", "args": {"name": "恒力机械"}},
+            {"name": "supplier_query", "args": {"name": "精工工业备件"}},
             {"name": "supplier_query", "args": {"name": "力帆实业"}},
         ]),
     ]
     updates = extract_preferences(messages)
-    assert "恒力机械" in updates.get("recent_suppliers", []), updates
+    assert "精工工业备件" in updates.get("recent_suppliers", []), updates
     assert updates.get("recent_queries"), updates
 
 
 @test
 def test_extract_supplier_fallback_regex():
     """正则兜底：要能剥掉"这两家"这类指示词，不能抽出一长串废话。"""
-    messages = [Msg("human", "对比一下春风动力和钱江摩托这两家供应商")]
+    messages = [Msg("human", "对比一下华东企业计算和精工工业备件这两家供应商")]
     updates = extract_preferences(messages)
     names = updates.get("recent_suppliers", [])
-    assert "钱江摩托" in names, updates
+    assert "精工工业备件" in names, updates
     assert all(len(n) <= 12 for n in names), names
 
 
@@ -331,13 +331,13 @@ def test_episode_archive_is_idempotent():
 @test
 def test_episode_summary_shape():
     messages = [
-        Msg("human", "查询恒力机械的信用和供货能力"),
+        Msg("human", "查询精工工业备件的信用和供货能力"),
         Msg("ai", "", tool_calls=[{"name": "supplier_page", "args": {}}]),
-        Msg("ai", "恒力机械信用评级 AA，交期最短。"),
+        Msg("ai", "精工工业备件信用评级 AA，交期最短。"),
     ]
     digest = summarize_episode(messages, thread_id="t-9")
     assert digest["task_type"] == "supplier", digest
-    assert "恒力机械" in digest["summary"], digest
+    assert "精工工业备件" in digest["summary"], digest
     assert "supplier_page" in digest["tools"], digest
 
 
@@ -422,7 +422,7 @@ def test_search_ranks_by_relevance():
     store = FakeStore()
     keeper = MemoryKeeper(store, "u1")
     keeper.upsert_semantic("preferred_chart_type", "pie")
-    keeper.archive_episode("t-1", summary="对比了三家供应商的供货能力，恒力机械交期最短")
+    keeper.archive_episode("t-1", summary="对比了三家供应商的供货能力，精工工业备件交期最短")
     keeper.archive_episode("t-2", summary="生成了库存预警报表")
 
     hits = keeper.search("供应商对比")
@@ -528,16 +528,16 @@ def test_migration_not_blocked_by_unrelated_semantic():
 def test_part_args_do_not_leak_into_suppliers():
     """回归：part_search 的参数不应混进 recent_suppliers。"""
     messages = [
-        Msg("human", "查一下恒力机械有没有刹车片"),
+        Msg("human", "查一下精工工业备件有没有接近传感器"),
         Msg("ai", "", tool_calls=[
-            {"name": "part_search", "args": {"keyword": "刹车片"}},
-            {"name": "supplier_query", "args": {"name": "恒力机械"}},
+            {"name": "part_search", "args": {"keyword": "接近传感器"}},
+            {"name": "supplier_query", "args": {"name": "精工工业备件"}},
         ]),
     ]
     updates = extract_preferences(messages)
     suppliers = updates.get("recent_suppliers", [])
-    assert "恒力机械" in suppliers, updates
-    assert "刹车片" not in suppliers, updates
+    assert "精工工业备件" in suppliers, updates
+    assert "接近传感器" not in suppliers, updates
 
 
 @test
@@ -546,7 +546,7 @@ def test_consolidate_end_to_end():
     keeper = MemoryKeeper(store, "u1")
     messages = [
         Msg("human", "以后都用饼图"),
-        Msg("ai", "", tool_calls=[{"name": "supplier_query", "args": {"name": "恒力机械"}}]),
+        Msg("ai", "", tool_calls=[{"name": "supplier_query", "args": {"name": "精工工业备件"}}]),
         Msg("ai", "已生成对比报告。"),
     ]
     result = keeper.consolidate(messages, thread_id="t-42")
@@ -621,7 +621,7 @@ def test_middleware_smoke():
     store = FakeStore()
     messages = [
         Msg("human", "以后都用饼图"),
-        Msg("ai", "", tool_calls=[{"name": "supplier_query", "args": {"name": "恒力机械"}}]),
+        Msg("ai", "", tool_calls=[{"name": "supplier_query", "args": {"name": "精工工业备件"}}]),
         Msg("ai", "好的，已生成对比报告。"),
     ]
     state = {"messages": messages}

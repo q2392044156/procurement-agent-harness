@@ -48,7 +48,7 @@ IMPERATIVE_HINTS = ("用", "输出", "展示", "生成", "画", "来", "给我",
 
 _SUPPLIER_SPLIT_RE = re.compile(r"[，。；！？、,.;!?\s和及与()（）:：]+")
 _SUPPLIER_NAME_RE = re.compile(r"([\u4e00-\u9fffA-Za-z0-9]{2,12})(?:供应商|公司|厂家|集团)")
-# "钱江摩托这两家供应商" 里的"这两家"是指示/量词，不是名字的一部分
+# "精工工业备件这两家供应商" 里的"这两家"是指示/量词，不是名字的一部分
 _SUPPLIER_TRAILING_NOISE = "这两那的几家等了的"
 
 _SUPPLIER_TOOLS = ("supplier_query", "supplier_get", "supplier_page")

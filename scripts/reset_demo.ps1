@@ -77,6 +77,12 @@ Write-Host 'Seeding knowledge base documents...'
 $code = $LASTEXITCODE
 if ($code -ne 0) { $ErrorActionPreference = $previous; exit $code }
 
+Write-Host 'Seeding industrial knowledge base corpus...'
+& $conda run --no-capture-output -n procurement python scripts/generate_industrial_corpus.py
+& $conda run --no-capture-output -n procurement python scripts/seed_industrial_kb.py
+$code = $LASTEXITCODE
+if ($code -ne 0) { $ErrorActionPreference = $previous; exit $code }
+
 Write-Host 'Rebuilding Qdrant index...'
 Remove-Item 'data\kb_state.json' -ErrorAction SilentlyContinue
 & $conda run --no-capture-output -n procurement python scripts/kb_ingest.py

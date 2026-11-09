@@ -20,7 +20,7 @@
 - `agent`、`mcp`、`qdrant`、`mongo` 容器启动，`/health` 与 MCP SSE 正常；
 - 平台 `AGENT_BASE_URL=http://agent:8000`，前端 SSE 代理 `PLATFORM PROXY: PASS`；
 - 容器内 HITL：批准创建 1 单、拒绝 0 单，`SSE SMOKE: PASS`；
-- KB 检索走 compose Qdrant（20 文档 / 23 切片）。
+- KB 检索走 compose Qdrant（20 份制度 + 12 份工业规范，41 个切片）。
 
 构建方式：
 

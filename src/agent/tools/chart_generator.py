@@ -229,7 +229,7 @@ def generate_chart(
             waterfall(瀑布图), funnel(漏斗图), gauge(仪表盘),
             candlestick(K线图), ohlc(OHLC图), sankey(桑基图), kpi_card(KPI卡片)
         data: 数据JSON字符串。格式: [{"label":"名称","value":数值}, ...]
-            分组图: [{"supplier":"A","price":25,"part":"火花塞"}, ...]
+            分组图: [{"supplier":"A","price":25,"part":"深沟球轴承"}, ...]
             散点图: [{"x":10,"y":20}, ...]
         title: 图表标题
         x_field: X轴/分类字段名（默认"label"）

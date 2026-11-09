@@ -109,7 +109,7 @@ conda run -n procurement python scripts/verify_phase_s4.py
 
 ## 6. 已知限制
 
-- 语料 20 份：2 份真实示例 + 18 份评测语料；50 问评测结果见 [EVAL_RAG.md](EVAL_RAG.md)；
+- 语料：20 份采购制度 + 12 份工业物资技术/验收规范（IT、轴承、电机、数控、机器人、空压机、劳保、紧固件等）；50 问评测结果见 [EVAL_RAG.md](EVAL_RAG.md)；
 - 未接 rerank 模型，仅用分数阈值（0.40 为当前语料标定值）；
 - DOCX 无分页信息，页码固定为 1；扫描件 PDF 未做 OCR；
 - 表格按纯文本抽取，结构可能丢失。

@@ -61,9 +61,9 @@ generate_chart(
 
 ```json
 [
-  {"supplier": "华胜机械", "price": 25.5, "part": "火花塞"},
-  {"supplier": "恒达配件", "price": 28.0, "part": "火花塞"},
-  {"supplier": "华胜机械", "price": 150.0, "part": "刹车片"}
+  {"supplier": "华胜机械", "price": 25.5, "part": "深沟球轴承"},
+  {"supplier": "恒达配件", "price": 28.0, "part": "深沟球轴承"},
+  {"supplier": "华胜机械", "price": 150.0, "part": "接近传感器"}
 ]
 ```
 

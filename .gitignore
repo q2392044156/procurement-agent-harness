@@ -72,3 +72,5 @@ bm25_stats.json
 data/download/
 # runtime KB state
 data/*.json
+# generated industrial corpus binaries
+samples/kb_corpus_industrial/*.docx

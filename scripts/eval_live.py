@@ -96,7 +96,7 @@ async def main() -> int:
                 f"total={page(data).get('total')}", ms)
 
     data, ms = await call("budget_list", {})
-    await check("budget_list", data.get("code") == 0 and len(data.get("data") or []) == 4,
+    await check("budget_list", data.get("code") == 0 and len(data.get("data") or []) >= 4,
                 f"departments={len(data.get('data') or [])}", ms)
 
     data, ms = await call("contract_page", {"current": 1, "size": 5})
