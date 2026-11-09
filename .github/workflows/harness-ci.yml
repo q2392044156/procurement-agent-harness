@@ -2,17 +2,29 @@ name: harness-ci
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: harness-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    name: 单元测试与 RAG 校验
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements.txt
       - name: Install CPU torch
         run: pip install --index-url https://download.pytorch.org/whl/cpu torch
       - name: Install dependencies
@@ -23,3 +35,5 @@ jobs:
         run: python -m src.test.test_memory_layer
       - name: Progressive skills tests
         run: python -m src.test.test_progressive_skills
+      - name: RAG grounding tests
+        run: python scripts/test_rag_grounding.py

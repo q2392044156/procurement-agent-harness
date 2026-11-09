@@ -1,5 +1,9 @@
 # Procurement Agent Harness
 
+[![harness-ci](https://github.com/q2392044156/procurement-agent-harness/actions/workflows/harness-ci.yml/badge.svg)](https://github.com/q2392044156/procurement-agent-harness/actions/workflows/harness-ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](requirements.txt)
+
 > 面向采购业务的 Agent 运行时：**LangGraph + MCP + DeepSeek + bge-m3/Qdrant + MongoDB**。
 > 与业务平台 [`smart-procurement-platform`](../smart-procurement-platform) 通过内部工具契约解耦：
 > 平台负责权限、数据范围、审批与幂等，Harness 负责理解、编排与工具调用。
@@ -383,4 +387,4 @@ python -m src.test.test_progressive_skills  # 19（Windows 符号链接用例自
 
 ## 11. 许可
 
-内部项目，未开源；如需引用请联系作者。
+本项目采用 [MIT License](LICENSE)，Copyright (c) 2026 WangQF。
