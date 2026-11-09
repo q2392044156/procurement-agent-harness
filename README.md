@@ -266,9 +266,14 @@ HF_HOME=E:\data\hf
 
 ### 5.9 Docker 方式（可选）
 
+首次构建必须使用 **host 网络**，否则 209MB 的 CPU torch 在 Docker 默认网络下容易长时间停滞：
+
 ```powershell
+cd ..\procurement-agent-harness
+.\scripts\build-images.ps1
+
 cd ..\smart-procurement-platform
-.\scripts\demo-up.ps1 -Agent -Build
+.\scripts\demo-up.ps1 -Agent
 ```
 
 首次在 MCP/Agent 容器内需要执行一次入库：
@@ -277,7 +282,8 @@ cd ..\smart-procurement-platform
 docker compose --profile agent exec mcp python -c "from src.kb.sync import sync; print(sync('1'))"
 ```
 
-> 镜像构建会安装 CPU 版 torch（约 209MB）与 bge-m3 依赖；网络受限时请先确保 pip / HF 镜像可达。
+> compose 的 `build` 不支持 `network: host` 权限，所以先用脚本构建镜像，再 `up` 复用镜像。
+> bge-m3 模型会缓存在 `hf-cache` 卷；若宿主机已下载，可先复制进卷避免重复下载。
 
 ---
 

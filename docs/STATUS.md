@@ -10,24 +10,28 @@
 | S4.5 | 20 份语料 + 50 问评测（Top5 100%、拒答 100%） | PASS | `21516fc` |
 | S5 | MongoDB 记忆闭环、6 个采购技能 | 9/9 | `fc9e702` |
 | S6 | 真机评测 10/10、工具追踪、P95 97ms、Agent 单轮 | 6/6 | `e626492` |
-| S7 | compose agent profile（Qdrant/Mongo/hf-cache）、一键脚本、部署文档 | 7/7（宿主运行态） | `c136584` + 平台 `74377a5` |
+| S7 | compose agent profile（Qdrant/Mongo/hf-cache）、镜像构建、一键脚本、部署文档 | 7/7（容器化） | `c136584` + 平台 `74377a5` |
 
-## S7 验证范围
+## S7 验证范围（容器化）
 
 已通过：
 
-- `qdrant` 与 `mongo` 容器由 compose 启动，健康检查通过；
-- 平台后端健康、Qdrant `/readyz` 200；
-- MCP（宿主进程）51 个工具、真实平台调用成功；
-- KB 检索指向 compose Qdrant，命中文档（20 份语料 / 23 切片）。
+- `agent` / `mcp` 镜像构建完成（`docker build --network=host`，绕开 Docker 默认网络下 torch 下载停滞）；
+- `agent`、`mcp`、`qdrant`、`mongo` 容器启动，`/health` 与 MCP SSE 正常；
+- 平台 `AGENT_BASE_URL=http://agent:8000`，前端 SSE 代理 `PLATFORM PROXY: PASS`；
+- 容器内 HITL：批准创建 1 单、拒绝 0 单，`SSE SMOKE: PASS`；
+- KB 检索走 compose Qdrant（20 文档 / 23 切片）。
 
-未完成：
+构建方式：
 
-- `agent` / `mcp` 镜像构建：Docker 内下载 torch（209MB）长时间停滞，已改为 Aliyun CPU wheel + 国内 pip 镜像，仍需在稳定网络或 CI 中完成；
-- 因此 `demo-up.ps1 -Agent` 的容器化 agent/mcp 未做端到端启动验证；宿主进程方式已验证同一拓扑。
+```powershell
+cd procurement-agent-harness
+.\scripts\build-images.ps1      # docker build --network=host
+cd ..\smart-procurement-platform
+.\scripts\demo-up.ps1 -Agent
+```
 
 ## 下一步
 
-1. 在 CI 或稳定网络执行 `docker compose --profile agent build agent mcp`；
-2. 云服务器部署并按 `docs/DEPLOYMENT.md` 验证；
-3. 录制三分钟演示视频（脚本见平台 `docs/DEMO.md`）。
+1. 云服务器部署并按 `docs/DEPLOYMENT.md` 验证；
+2. 录制三分钟演示视频（脚本见平台 `docs/DEMO.md`）。
