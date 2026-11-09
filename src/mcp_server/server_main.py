@@ -14,6 +14,10 @@ from src.mcp_server.tools.suppliers_tools import register_supplier_tools
 from src.mcp_server.tools.parts_tools import register_parts_tools
 from src.mcp_server.tools.order_tools import register_order_tools
 from src.mcp_server.tools.inventory_tools import register_inventory_tools
+from src.mcp_server.tools.requisition_tools import register_requisition_tools
+from src.mcp_server.tools.workflow_tools import register_workflow_tools
+from src.mcp_server.tools.receipt_tools import register_receipt_tools
+from src.mcp_server.tools.operations_tools import register_operations_tools
 
 # 创建 MCP Server 实例
 mcp = FastMCP(
@@ -26,6 +30,10 @@ register_supplier_tools(mcp)
 register_parts_tools(mcp)
 register_order_tools(mcp)
 register_inventory_tools(mcp)
+register_requisition_tools(mcp)
+register_workflow_tools(mcp)
+register_receipt_tools(mcp)
+register_operations_tools(mcp)
 
 
 if __name__ == "__main__":

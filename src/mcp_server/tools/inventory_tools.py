@@ -58,48 +58,6 @@ def register_inventory_tools(mcp: FastMCP):
         return json.dumps(result, ensure_ascii=False, indent=2)
 
     @mcp.tool()
-    async def inventory_inbound(
-        part_id: int,
-        quantity: int,
-        warehouse_location: str = None,
-    ) -> str:
-        """执行入库操作。
-
-        Args:
-            part_id: 零件ID（必填）.
-            quantity: 入库数量（必填，>0）
-            warehouse_location: 仓库位置（可选）
-
-        Returns:
-            操作结果JSON
-        """
-        params = {
-            "partId": part_id,
-            "quantity": quantity,
-            "warehouseLocation": warehouse_location,
-        }
-        result = await erp_client.post("/api/inventory/inbound", params=params)
-        return json.dumps(result, ensure_ascii=False, indent=2)
-
-    @mcp.tool()
-    async def inventory_outbound(part_id: int, quantity: int) -> str:
-        """执行出库操作。
-
-        Args:
-            part_id: 零件ID（必填）
-            quantity: 出库数量（必填，>0）
-
-        Returns:
-            操作结果JSON
-        """
-        params = {
-            "partId": part_id,
-            "quantity": quantity,
-        }
-        result = await erp_client.post("/api/inventory/outbound", params=params)
-        return json.dumps(result, ensure_ascii=False, indent=2)
-
-    @mcp.tool()
     async def inventory_get(id: int) -> str:
         """获取单条库存记录详情。
 
