@@ -18,6 +18,7 @@ from src.mcp_server.tools.requisition_tools import register_requisition_tools
 from src.mcp_server.tools.workflow_tools import register_workflow_tools
 from src.mcp_server.tools.receipt_tools import register_receipt_tools
 from src.mcp_server.tools.operations_tools import register_operations_tools
+from src.mcp_server.tools.analytics_tools import register_analytics_tools
 
 # 创建 MCP Server 实例
 mcp = FastMCP(
@@ -34,6 +35,7 @@ register_requisition_tools(mcp)
 register_workflow_tools(mcp)
 register_receipt_tools(mcp)
 register_operations_tools(mcp)
+register_analytics_tools(mcp)
 
 
 if __name__ == "__main__":
