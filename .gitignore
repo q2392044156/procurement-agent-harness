@@ -49,6 +49,7 @@ src/download/
 *.log
 *.pid
 *.pid.lock
+logs/
 
 # ============ 本地运行时数据 ============
 .tmp/

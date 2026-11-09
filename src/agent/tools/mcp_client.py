@@ -66,6 +66,43 @@ async def load_mcp_tools(user_id: str = "default_user", force_refresh: bool = Fa
             tools = await client.get_tools()
 
             if tools:
+                from langchain_core.tools import StructuredTool
+
+                from ..middlewares.tool_trace import record_tool_call
+
+                def _wrap(tool, uid: str):
+                    async def _traced(**kwargs):
+                        started = time.perf_counter()
+                        status, error, result_len = "ok", None, 0
+                        try:
+                            result = await tool.ainvoke(kwargs)
+                            content = getattr(result, "content", result)
+                            if isinstance(content, str):
+                                result_len = len(content)
+                            elif isinstance(content, list):
+                                result_len = sum(len(str(item)) for item in content)
+                            return result
+                        except Exception as exc:  # noqa: BLE001
+                            status = "error"
+                            error = f"{type(exc).__name__}: {exc}"[:200]
+                            raise
+                        finally:
+                            record_tool_call(
+                                tool.name, uid, status,
+                                (time.perf_counter() - started) * 1000,
+                                result_len=result_len,
+                                error=error,
+                                args_keys=sorted(kwargs.keys()),
+                            )
+
+                    return StructuredTool.from_function(
+                        coroutine=_traced,
+                        name=tool.name,
+                        description=tool.description,
+                        args_schema=getattr(tool, "args_schema", None),
+                    )
+
+                tools = [_wrap(tool, user_id) for tool in tools]
                 _cached_tools[user_id] = tools
                 _cache_time[user_id] = time.time()
                 mcp_logger.info(

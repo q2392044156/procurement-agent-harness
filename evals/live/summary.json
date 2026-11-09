@@ -1,0 +1,69 @@
+{
+  "platform": "http://localhost:8080",
+  "cases": 10,
+  "passed": 10,
+  "avgLatencyMs": 67.8,
+  "maxLatencyMs": 150.8,
+  "results": [
+    {
+      "name": "supplier_page",
+      "ok": true,
+      "detail": "records=3",
+      "latencyMs": 76.7
+    },
+    {
+      "name": "part_page",
+      "ok": true,
+      "detail": "records=3",
+      "latencyMs": 53.1
+    },
+    {
+      "name": "requisition_page",
+      "ok": true,
+      "detail": "total=3",
+      "latencyMs": 51.7
+    },
+    {
+      "name": "budget_list",
+      "ok": true,
+      "detail": "departments=4",
+      "latencyMs": 58.8
+    },
+    {
+      "name": "contract_page",
+      "ok": true,
+      "detail": "total=2",
+      "latencyMs": 58.7
+    },
+    {
+      "name": "inventory_risk",
+      "ok": true,
+      "detail": "rows=1 mouseGap=1.00",
+      "latencyMs": 56.6
+    },
+    {
+      "name": "supplier_scorecard",
+      "ok": true,
+      "detail": "supplier=1 amount=0.00",
+      "latencyMs": 58.8
+    },
+    {
+      "name": "spend_analysis",
+      "ok": true,
+      "detail": "total=7200.0",
+      "latencyMs": 55.0
+    },
+    {
+      "name": "kb_search",
+      "ok": true,
+      "detail": "hits=3",
+      "latencyMs": 150.8
+    },
+    {
+      "name": "inventory_warning",
+      "ok": true,
+      "detail": "items=1",
+      "latencyMs": 58.0
+    }
+  ]
+}
