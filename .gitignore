@@ -67,3 +67,4 @@ samples/kb_corpus/*.docx
 .DS_Store
 Thumbs.db
 Desktop.ini
+bm25_stats.json

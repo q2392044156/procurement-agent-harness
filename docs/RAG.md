@@ -36,6 +36,45 @@ changed?since=上次同步时间
 
 无命中时返回空结果，Agent 必须回答“知识库没有”，不得用通用知识补答。
 
+## 8. 生产级增强（本轮）
+
+**召回层**
+
+- 自研 BM25：中文 bigram + 英文/数字词，文档侧长度归一化 TF、查询侧 IDF，写入 Qdrant named sparse vector `bm25`；
+- dense + sparse 双路召回，Qdrant RRF 融合；
+- 查询扩展：采购同义词（供应商/供方、账期/付款期限等），`KB_QUERY_EXPANSION` 控制。
+
+**精排层**
+
+- `KB_RERANKER=auto|fastembed|llm|none`：优先 fastembed cross-encoder（`BAAI/bge-reranker-v2-m3-int8`），不可用时回退 LLM 打分；
+- 精排后按 `KB_RERANK_MIN_SCORE` 过滤，无相关片段直接返回空（拒答依据）；
+- 按 `(doc_id,page,text)` 去重。
+
+**生成层**
+
+- 系统提示新增“知识库回答规则”：只依据片段、必须 `[《标题》第X页]`、无依据必须拒答；
+- 流式结束前强制兜底：有片段但无引用时追加“依据：…”，检索为空时追加“知识库中没有找到依据”；
+- `src/kb/grounding.py` 提供引用合法性校验，测试见 `scripts/test_rag_grounding.py`。
+
+**入库层**
+
+- PDF 扫描页 OCR（PyMuPDF 渲染 + RapidOCR），PDF/DOCX 表格转 Markdown；
+- 按页 + 标题/段落结构化切分，保留 `page/section`；
+- MCP 启动后每 `KB_AUTO_SYNC_SECONDS` 秒轮询 `changed` 并增量入库（发布后最长 2 分钟生效）；
+- 下载/平台请求 3 次重试，单文档失败不阻断整批，返回 `errors`；
+- 新增 `/api/kb/documents/{id}/raw` 内部端点，容器内不依赖 MinIO 预签名 host；
+- 新增 `.dockerignore`，避免 `.env`、状态文件进入镜像。
+
+**测试**
+
+```powershell
+python scripts/test_rag_ingestion.py     # OCR/表格/结构化切分/BM25
+python scripts/test_rag_grounding.py     # 引用/拒答校验
+python scripts/test_rag_generation.py    # 真实 Agent 引用与拒答
+python scripts/eval_rag.py               # 混合检索 + 精排评测
+```
+
+
 P1 增强：
 
 - **混合检索**：`combined = 0.75 × 向量分 + 0.25 × 字符 bigram 重合度`，

@@ -1,0 +1,13 @@
+.git
+.env
+.env.*
+.tmp
+logs
+__pycache__
+*.pyc
+.kb_state.json
+bm25_stats.json
+.cache
+.pytest_cache
+samples/kb_corpus
+evals/live/summary.json

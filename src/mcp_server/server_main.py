@@ -42,13 +42,26 @@ register_kb_tools(mcp)
 
 
 def _warmup_kb() -> None:
-    """后台预热：加载 bge-m3 并确保 Qdrant 集合存在，降低首次检索延迟。"""
+    """后台预热 + 增量自动入库：加载 bge-m3、确保集合、按周期同步发布文档。"""
     try:
+        import time
+
+        from src.kb.config import AUTO_SYNC_SECONDS
         from src.kb.embedder import dimension
         from src.kb.store import ensure_collection
+        from src.kb.sync import sync
 
         ensure_collection(dimension())
         print("[MCP] KB warmup finished (bge-m3 loaded, collection ready)")
+        while True:
+            try:
+                result = sync("1")
+                print(f"[MCP] KB auto-sync: {result}")
+            except Exception as exc:  # noqa: BLE001
+                print(f"[MCP] KB auto-sync failed: {type(exc).__name__}: {exc}")
+            if AUTO_SYNC_SECONDS <= 0:
+                break
+            time.sleep(AUTO_SYNC_SECONDS)
     except Exception as exc:  # noqa: BLE001
         print(f"[MCP] KB warmup skipped: {type(exc).__name__}: {exc}")
 

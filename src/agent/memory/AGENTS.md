@@ -7,7 +7,7 @@
 
 ### MCP 工具（按领域）
 
-- 供应商：`supplier_search` / `supplier_page` / `supplier_get` / `supplier_create` / `supplier_update_status` / `supplier_scorecard`
+- 供应商：`supplier_query` / `supplier_page` / `supplier_get` / `supplier_create` / `supplier_update_status` / `supplier_scorecard`
 - 物资：`part_search` / `part_page` / `part_query` / `part_by_supplier` / `part_create`
 - 采购申请：`requisition_page` / `requisition_get` / `requisition_create` / `requisition_submit` / `requisition_cancel` / `requisition_convert`
 - 采购订单：`order_page` / `order_get` / `order_create` / `order_update` / `order_submit` / `order_close` / `order_cancel` / `order_search_details` / `order_statistics`

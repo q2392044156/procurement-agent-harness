@@ -1,9 +1,41 @@
-"""检索：按用户可见文档过滤，返回带引用的切片。"""
+"""检索：查询扩展 → dense+BM25 混合召回 → cross-encoder/LLM 精排。"""
+from __future__ import annotations
+
 import httpx
 
-from .config import DEFAULT_TOP_K, ERP_BASE_URL, INTERNAL_TOKEN, LEXICAL_WEIGHT, MIN_SCORE
+from .bm25 import load_stats, query_sparse
+from .config import (
+    DEFAULT_TOP_K,
+    ERP_BASE_URL,
+    INTERNAL_TOKEN,
+    MIN_SCORE,
+    QUERY_EXPANSION,
+    RERANK_MIN_SCORE,
+)
 from .embedder import embed_query
-from .store import search as vector_search
+from .reranker import rerank
+from .store import search_hybrid
+
+_SYNONYMS = {
+    "供应商": ["供方", "厂商"],
+    "账期": ["付款期限", "付款周期"],
+    "质保": ["保修", "质量保证"],
+    "采购申请": ["请购单"],
+    "采购订单": ["订单"],
+    "零部件": ["物料", "零件"],
+    "库存": ["仓储", "存货"],
+    "准入": ["资质", "资格"],
+}
+
+
+def _rewrite(query: str) -> str:
+    if not QUERY_EXPANSION:
+        return query
+    additions: list[str] = []
+    for term, synonyms in _SYNONYMS.items():
+        if term in query:
+            additions.extend(synonyms)
+    return f"{query} {' '.join(additions)}" if additions else query
 
 
 def _bigrams(text: str) -> set[str]:
@@ -35,26 +67,57 @@ def search(query: str, user_id: str, top_k: int = DEFAULT_TOP_K) -> dict:
     if not documents:
         return {
             "code": 0,
-            "data": {"query": query, "results": [], "total": 0, "reason": "当前用户没有可见文档"},
+            "data": {
+                "query": query,
+                "results": [],
+                "total": 0,
+                "reason": "当前用户没有可见文档。",
+            },
         }
 
     ids = [int(row["id"]) for row in documents]
     titles = {int(row["id"]): row.get("title") for row in documents}
-    hits = vector_search(embed_query(query), ids, max(top_k * 3, 20))
+    effective_query = _rewrite(query)
+    dense_vector = embed_query(effective_query)
+    sparse_indices, sparse_values = query_sparse(effective_query, load_stats())
+    hits = search_hybrid(
+        dense_vector, sparse_indices, sparse_values, ids, max(top_k * 4, 24)
+    )
 
-    scored = []
+    candidates = []
+    seen = set()
     for hit in hits:
         payload = hit.payload or {}
-        vector_score = float(hit.score)
-        lexical = _lexical_score(query, payload.get("text", ""))
-        combined = (1 - LEXICAL_WEIGHT) * vector_score + LEXICAL_WEIGHT * lexical
-        scored.append((combined, vector_score, payload))
-    scored.sort(key=lambda item: item[0], reverse=True)
+        key = (payload.get("doc_id"), payload.get("page"), str(payload.get("text", ""))[:80])
+        if key in seen:
+            continue
+        seen.add(key)
+        candidates.append(
+            {
+                "payload": payload,
+                "rrf": float(getattr(hit, "score", 0.0) or 0.0),
+                "lexical": _lexical_score(effective_query, payload.get("text", "")),
+            }
+        )
+
+    scores = rerank(query, [item["payload"].get("text", "") for item in candidates])
+    if scores is not None:
+        for item, score in zip(candidates, scores):
+            item["rerank"] = float(score)
+        candidates = [
+            item for item in candidates if item["rerank"] >= RERANK_MIN_SCORE
+        ]
+        candidates.sort(key=lambda item: item["rerank"], reverse=True)
+    else:
+        # 精排不可用时退回词法阈值，避免 RRF 噪声把所有片段都放行
+        candidates = [
+            item for item in candidates if item["lexical"] >= MIN_SCORE
+        ]
+        candidates.sort(key=lambda item: (item["lexical"], item["rrf"]), reverse=True)
 
     results = []
-    for combined, _vector_score, payload in scored:
-        if combined < MIN_SCORE:
-            continue
+    for item in candidates[:top_k]:
+        payload = item["payload"]
         doc_id = int(payload.get("doc_id"))
         page = payload.get("page")
         title = payload.get("title") or titles.get(doc_id)
@@ -64,14 +127,10 @@ def search(query: str, user_id: str, top_k: int = DEFAULT_TOP_K) -> dict:
                 "docId": doc_id,
                 "title": title,
                 "page": page,
-                "score": round(combined, 4),
+                "score": round(item.get("rerank", item.get("lexical", 0.0)), 4),
                 "citation": citation,
                 "text": payload.get("text", ""),
             }
         )
-        if len(results) >= top_k:
-            break
-    return {
-        "code": 0,
-        "data": {"query": query, "results": results, "total": len(results)},
-    }
+
+    return {"code": 0, "data": {"query": query, "results": results, "total": len(results)}}

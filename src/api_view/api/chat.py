@@ -79,6 +79,8 @@ async def stream_chat_response(
     assistant_content = ""
     tool_calls_buffer = []
     thinking_emitted = False
+    kb_citations: list[str] = []
+    kb_searched = False
     phase = "thinking"  # 当前阶段: thinking → planning → executing → reviewing → result
     last_phase = "thinking"  # 上次已发射的阶段（去重）
     last_todos_sig = None  # 上次已发射的 todo 列表签名（去重）
@@ -282,6 +284,16 @@ async def stream_chat_response(
                 if token_type == "tool":
                     tool_name = getattr(token, "name", "unknown")
                     tool_content = content if isinstance(content, str) else str(content)
+                    if tool_name == "kb_search":
+                        kb_searched = True
+                        try:
+                            payload = json.loads(tool_content)
+                            rows = ((payload.get("data") or {}).get("results") or [])
+                            kb_citations.extend(
+                                row.get("citation") for row in rows if row.get("citation")
+                            )
+                        except json.JSONDecodeError:
+                            pass
                     # 更新 buffer 中对应工具的状态
                     for tc in tool_calls_buffer:
                         if tc["name"] == tool_name and tc["status"] == "running":
@@ -334,7 +346,16 @@ async def stream_chat_response(
                             source = "order"
                     yield sse_event("token", {"content": content, "source": source})
 
-        # ===== 流正常结束 =====
+        # ===== 流正常结束：强制引用/拒答兜底 =====
+        if assistant_content and kb_searched:
+            from src.kb.grounding import enforce
+
+            updated = enforce(assistant_content, kb_citations, empty=not kb_citations)
+            if updated != assistant_content:
+                suffix = updated[len(assistant_content):]
+                assistant_content = updated
+                yield sse_event("token", {"content": suffix, "source": "main"})
+
         if assistant_content:
             display_messages.append({
                 "id": str(uuid.uuid4()),
