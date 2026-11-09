@@ -10,7 +10,7 @@
 | S4.5 | 20 份语料 + 50 问评测（Top5 100%、拒答 100%） | PASS | `21516fc` |
 | S5 | MongoDB 记忆闭环、6 个采购技能 | 9/9 | `fc9e702` |
 | S6 | 真机评测 10/10、工具追踪、P95 97ms、Agent 单轮 | 6/6 | `e626492` |
-| S7 | compose agent profile（Qdrant/Mongo/hf-cache）、一键脚本、部署文档 | 7/7（宿主运行态） | 待提交 |
+| S7 | compose agent profile（Qdrant/Mongo/hf-cache）、一键脚本、部署文档 | 7/7（宿主运行态） | `c136584` + 平台 `74377a5` |
 
 ## S7 验证范围
 
