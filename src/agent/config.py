@@ -95,7 +95,13 @@ MAX_TOOL_CALLS = get_env_int("MAX_TOOL_CALLS", 30)
 SUMMARIZATION_THRESHOLD = 0.85  # 85% 上下文窗口时触发摘要
 
 # ============ 中断配置 ============
+# 所有写操作都必须人工确认；只读工具不中断。
 INTERRUPT_ON_TOOLS = {
     "order_create": {"allowed_decisions": ["approve", "reject"]},
     "order_update": {"allowed_decisions": ["approve", "reject"]},
+    "order_cancel": {"allowed_decisions": ["approve", "reject"]},
+    "requisition_create": {"allowed_decisions": ["approve", "reject"]},
+    "requisition_submit": {"allowed_decisions": ["approve", "reject"]},
+    "requisition_cancel": {"allowed_decisions": ["approve", "reject"]},
+    "requisition_convert": {"allowed_decisions": ["approve", "reject"]},
 }

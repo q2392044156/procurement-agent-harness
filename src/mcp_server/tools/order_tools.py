@@ -166,3 +166,19 @@ def register_order_tools(mcp: FastMCP):
             f"/api/orders/update-status/{id}", params={"status": status}
         )
         return json.dumps(result, ensure_ascii=False, indent=2)
+
+    @mcp.tool()
+    async def order_cancel(id: int, reason: str) -> str:
+        """取消采购订单（需人工确认；草稿/驳回/待审批/已批准且未收货可取消）。
+
+        Args:
+            id: 订单ID
+            reason: 取消原因（必填）
+
+        Returns:
+            取消后的订单详情JSON（status=CANCELLED）
+        """
+        result = await erp_client.post(
+            f"/api/orders/{id}/cancel", json_data={"reason": reason}
+        )
+        return json.dumps(result, ensure_ascii=False, indent=2)
