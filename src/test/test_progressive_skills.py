@@ -82,7 +82,14 @@ class ProgressiveSkillsTests(unittest.TestCase):
     def test_symlink_outside_root(self):
         outside = self.root / "outside.txt"
         outside.write_text("SECRET")
-        (self.directory / "escape.txt").symlink_to(outside)
+        try:
+            (self.directory / "escape.txt").symlink_to(outside)
+        except OSError as exc:
+            # Windows 默认需要开发者模式/管理员才能创建符号链接
+            if getattr(exc, "winerror", None) == 1314:
+                print("  SKIP test_symlink_outside_root: symlink privilege not available")
+                return
+            raise
         self.assertFalse(self.call("read_skill_resource", {"skill_id": self.id, "path": "escape.txt"})["success"])
 
     def test_nested_skill_boundary(self):
