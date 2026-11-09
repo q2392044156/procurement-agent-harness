@@ -57,6 +57,7 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+.kb_state.json
 
 # ============ IDE / 系统 ============
 .vscode/
