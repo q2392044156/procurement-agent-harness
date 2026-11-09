@@ -47,7 +47,7 @@ def main() -> int:
     if summary_path.exists():
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
         check("live eval coverage",
-              summary["passed"] == summary["cases"] == 10,
+              summary["passed"] == summary["cases"] and summary["cases"] >= 30,
               f"{summary['passed']}/{summary['cases']} avg={summary['avgLatencyMs']}ms")
     else:
         check("live eval coverage", False, "summary.json missing")
@@ -71,6 +71,9 @@ def main() -> int:
           f"successRate={metrics['successRate']} errors={metrics['errors']}")
     check("tool latency p95", 0 < metrics["p95Ms"] <= 20000,
           f"p50={metrics['p50Ms']}ms p95={metrics['p95Ms']}ms max={metrics['maxMs']}ms")
+    check("model usage recorded", metrics["modelCalls"] >= 1 and metrics["inputTokens"] > 0,
+          f"calls={metrics['modelCalls']} in={metrics['inputTokens']} out={metrics['outputTokens']} "
+          f"cost=${metrics['estimatedCostUsd']}")
 
     failed = [name for name, ok, _ in RESULTS if not ok]
     print()

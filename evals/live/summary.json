@@ -1,69 +1,195 @@
 {
   "platform": "http://localhost:8080",
-  "cases": 10,
-  "passed": 10,
-  "avgLatencyMs": 67.8,
-  "maxLatencyMs": 150.8,
+  "cases": 31,
+  "passed": 31,
+  "avgLatencyMs": 123.8,
+  "maxLatencyMs": 358.5,
   "results": [
     {
       "name": "supplier_page",
       "ok": true,
       "detail": "records=3",
-      "latencyMs": 76.7
+      "latencyMs": 184.4
     },
     {
       "name": "part_page",
       "ok": true,
       "detail": "records=3",
-      "latencyMs": 53.1
+      "latencyMs": 138.8
     },
     {
       "name": "requisition_page",
       "ok": true,
-      "detail": "total=3",
-      "latencyMs": 51.7
+      "detail": "total=2",
+      "latencyMs": 131.4
     },
     {
       "name": "budget_list",
       "ok": true,
       "detail": "departments=4",
-      "latencyMs": 58.8
+      "latencyMs": 129.4
     },
     {
       "name": "contract_page",
       "ok": true,
       "detail": "total=2",
-      "latencyMs": 58.7
+      "latencyMs": 120.9
     },
     {
       "name": "inventory_risk",
       "ok": true,
-      "detail": "rows=1 mouseGap=1.00",
-      "latencyMs": 56.6
+      "detail": "rows=0",
+      "latencyMs": 136.4
     },
     {
       "name": "supplier_scorecard",
       "ok": true,
       "detail": "supplier=1 amount=0.00",
-      "latencyMs": 58.8
+      "latencyMs": 115.2
     },
     {
       "name": "spend_analysis",
       "ok": true,
       "detail": "total=7200.0",
-      "latencyMs": 55.0
+      "latencyMs": 116.2
     },
     {
       "name": "kb_search",
       "ok": true,
       "detail": "hits=3",
-      "latencyMs": 150.8
+      "latencyMs": 358.5
     },
     {
       "name": "inventory_warning",
       "ok": true,
-      "detail": "items=1",
-      "latencyMs": 58.0
+      "detail": "items=0",
+      "latencyMs": 103.4
+    },
+    {
+      "name": "order_page",
+      "ok": true,
+      "detail": "rows=1",
+      "latencyMs": 124.4
+    },
+    {
+      "name": "supplier_query",
+      "ok": true,
+      "detail": "args={'name': '科技'}",
+      "latencyMs": 96.4
+    },
+    {
+      "name": "part_search",
+      "ok": true,
+      "detail": "args={'name': '鼠标'}",
+      "latencyMs": 103.2
+    },
+    {
+      "name": "part_query",
+      "ok": true,
+      "detail": "args={'id': 1}",
+      "latencyMs": 126.1
+    },
+    {
+      "name": "part_by_supplier",
+      "ok": true,
+      "detail": "args={'supplier_id': '1'}",
+      "latencyMs": 117.9
+    },
+    {
+      "name": "order_get",
+      "ok": true,
+      "detail": "args={'id': 1}",
+      "latencyMs": 111.7
+    },
+    {
+      "name": "order_statistics",
+      "ok": true,
+      "detail": "args={}",
+      "latencyMs": 105.9
+    },
+    {
+      "name": "workflow_done",
+      "ok": true,
+      "detail": "args={}",
+      "latencyMs": 106.4
+    },
+    {
+      "name": "workflow_timeline",
+      "ok": true,
+      "detail": "args={'business_type': 'PURCHASE_ORDER', 'business_id': 1}",
+      "latencyMs": 114.6
+    },
+    {
+      "name": "dashboard_summary",
+      "ok": true,
+      "detail": "args={}",
+      "latencyMs": 116.1
+    },
+    {
+      "name": "alerts_summary",
+      "ok": true,
+      "detail": "args={}",
+      "latencyMs": 104.3
+    },
+    {
+      "name": "warehouse_get",
+      "ok": true,
+      "detail": "args={'id': 1}",
+      "latencyMs": 97.1
+    },
+    {
+      "name": "issue_page",
+      "ok": true,
+      "detail": "args={'current': 1, 'size': 5}",
+      "latencyMs": 97.6
+    },
+    {
+      "name": "budget_list",
+      "ok": true,
+      "detail": "args={}",
+      "latencyMs": 112.5
+    },
+    {
+      "name": "contract_get",
+      "ok": true,
+      "detail": "args={'id': 2}",
+      "latencyMs": 104.8
+    },
+    {
+      "name": "part_price_history",
+      "ok": true,
+      "detail": "args={'id': 1}",
+      "latencyMs": 119.9
+    },
+    {
+      "name": "price_trend",
+      "ok": true,
+      "detail": "args={'material_id': 1}",
+      "latencyMs": 112.9
+    },
+    {
+      "name": "approval_sla",
+      "ok": true,
+      "detail": "args={}",
+      "latencyMs": 114.4
+    },
+    {
+      "name": "inventory_check",
+      "ok": true,
+      "detail": "args={}",
+      "latencyMs": 103.9
+    },
+    {
+      "name": "kb_get_document",
+      "ok": true,
+      "detail": "args={'id': 1}",
+      "latencyMs": 109.6
+    },
+    {
+      "name": "kb_cite",
+      "ok": true,
+      "detail": "args={'doc_id': 1, 'page': 1}",
+      "latencyMs": 102.2
     }
   ]
 }

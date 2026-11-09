@@ -6,13 +6,14 @@ import json
 from typing import Optional
 from fastmcp import FastMCP
 from ..http_base import erp_client
+from ._result import check_batch, idempotency_headers, mark_verified
 
 
 def register_order_tools(mcp: FastMCP):
     """注册采购订单管理工具到 MCP Server"""
 
     @mcp.tool()
-    async def order_create(order_data: str) -> str:
+    async def order_create(order_data: str, idempotency_key: str = None) -> str:
         """创建直采采购订单（需人工确认）。
 
         Args:
@@ -33,12 +34,24 @@ def register_order_tools(mcp: FastMCP):
         try:
             data = json.loads(order_data) if isinstance(order_data, str) else order_data
         except json.JSONDecodeError as e:
-            return json.dumps({"code": 400, "message": f"JSON解析失败: {e}", "data": None}, ensure_ascii=False)
-        result = await erp_client.post("/api/orders/create", json_data=data)
-        return json.dumps(result, ensure_ascii=False, indent=2)
+            return json.dumps({"code": 400, "message": f"JSON解析失败: {e}", "data": None,
+                               "errorType": "validation", "retryable": False}, ensure_ascii=False)
+        if not isinstance(data, dict) or "supplierId" not in data or "orderDetail" not in data:
+            return json.dumps({"code": 400, "message": "缺少 supplierId 或 orderDetail",
+                               "errorType": "validation", "retryable": False}, ensure_ascii=False)
+        try:
+            check_batch(data["orderDetail"])
+        except ValueError as e:
+            return json.dumps({"code": 400, "message": str(e),
+                               "errorType": "validation", "retryable": False}, ensure_ascii=False)
+        result = await erp_client.post(
+            "/api/orders/create", json_data=data,
+            headers=idempotency_headers(idempotency_key),
+        )
+        return json.dumps(mark_verified(result), ensure_ascii=False, indent=2)
 
     @mcp.tool()
-    async def order_update(id: int, order_data: str) -> str:
+    async def order_update(id: int, order_data: str, idempotency_key: str = None) -> str:
         """修改草稿/驳回状态的订单（需人工确认）。
 
         Args:
@@ -55,8 +68,11 @@ def register_order_tools(mcp: FastMCP):
             data = json.loads(order_data) if isinstance(order_data, str) else order_data
         except json.JSONDecodeError as e:
             return json.dumps({"code": 400, "message": f"JSON解析失败: {e}", "data": None}, ensure_ascii=False)
-        result = await erp_client.put(f"/api/orders/update/{id}", json_data=data)
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        result = await erp_client.put(
+            f"/api/orders/update/{id}", json_data=data,
+            headers=idempotency_headers(idempotency_key),
+        )
+        return json.dumps(mark_verified(result), ensure_ascii=False, indent=2)
 
     @mcp.tool()
     async def order_page(
@@ -151,47 +167,53 @@ def register_order_tools(mcp: FastMCP):
         return json.dumps(result, ensure_ascii=False, indent=2)
 
     @mcp.tool()
-    async def order_submit(id: int) -> str:
+    async def order_submit(id: int, idempotency_key: str = None) -> str:
         """提交订单进入审批（需人工确认）。仅草稿/驳回状态可提交。
 
         Args:
             id: 订单ID
+            idempotency_key: 幂等键（可选）
 
         Returns:
             操作结果 JSON
         """
         result = await erp_client.patch(
-            f"/api/orders/update-status/{id}", params={"status": "1"}
+            f"/api/orders/update-status/{id}", params={"status": "1"},
+            headers=idempotency_headers(idempotency_key),
         )
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return json.dumps(mark_verified(result), ensure_ascii=False, indent=2)
 
     @mcp.tool()
-    async def order_close(id: int) -> str:
+    async def order_close(id: int, idempotency_key: str = None) -> str:
         """关闭已完成收货的订单。
 
         Args:
             id: 订单ID
+            idempotency_key: 幂等键（可选）
 
         Returns:
             操作结果 JSON
         """
         result = await erp_client.patch(
-            f"/api/orders/update-status/{id}", params={"status": "4"}
+            f"/api/orders/update-status/{id}", params={"status": "4"},
+            headers=idempotency_headers(idempotency_key),
         )
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return json.dumps(mark_verified(result), ensure_ascii=False, indent=2)
 
     @mcp.tool()
-    async def order_cancel(id: int, reason: str) -> str:
+    async def order_cancel(id: int, reason: str, idempotency_key: str = None) -> str:
         """取消采购订单（需人工确认；草稿/驳回/待审批/已批准且未收货可取消）。
 
         Args:
             id: 订单ID
             reason: 取消原因（必填）
+            idempotency_key: 幂等键（可选）
 
         Returns:
             取消后的订单详情JSON（status=CANCELLED）
         """
         result = await erp_client.post(
-            f"/api/orders/{id}/cancel", json_data={"reason": reason}
+            f"/api/orders/{id}/cancel", json_data={"reason": reason},
+            headers=idempotency_headers(idempotency_key),
         )
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return json.dumps(mark_verified(result), ensure_ascii=False, indent=2)

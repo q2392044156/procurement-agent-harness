@@ -109,6 +109,20 @@ async def main() -> int:
     irrelevant_hits = (irrelevant.get("data") or {}).get("results") or []
     check("kb_search refuses unrelated", len(irrelevant_hits) == 0, f"hits={len(irrelevant_hits)}")
 
+    # 可见性前置过滤：只允许 doc 1 时，不能召回供应商文档（doc 2）
+    import src.kb.retriever as retriever_module
+
+    original_visible = retriever_module.visible_documents
+    retriever_module.visible_documents = lambda _uid: [
+        {"id": "1", "title": "内部采购管理制度", "currentVersion": 1}
+    ]
+    try:
+        limited = retriever_module.search("供应商准入需要哪些资质", "1", 5)
+    finally:
+        retriever_module.visible_documents = original_visible
+    limited_ids = {row["docId"] for row in limited["data"]["results"]}
+    check("visibility pre-filter", limited_ids.issubset({1}), f"docIds={sorted(limited_ids)}")
+
     document = await call("kb_get_document", {"id": 1})
     check("kb_get_document", bool((document.get("data") or {}).get("downloadUrl")))
 

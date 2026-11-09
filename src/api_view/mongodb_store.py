@@ -88,9 +88,17 @@ class MongoDBStore(BaseStore):
         self._db = self._client[db_name]
         self._collection = self._db[collection_name]
 
-        # 创建索引
-        self._collection.create_index([("namespace", 1), ("key", 1)], unique=True)
-        self._collection.create_index("updated_at")
+        # 索引修复：namespace 是数组，唯一索引会按数组元素建键，
+        # 导致所有用户共享 "user-preferences"/"memories" 前缀时互相冲突。
+        # 唯一性由 _id（namespace::key）保证，这里只建非唯一查询索引。
+        try:
+            indexes = self._collection.index_information()
+            if indexes.get("namespace_1_key_1", {}).get("unique"):
+                self._collection.drop_index("namespace_1_key_1")
+            self._collection.create_index([("namespace", 1), ("key", 1)])
+            self._collection.create_index("updated_at")
+        except Exception as exc:  # noqa: BLE001
+            web_logger.warning(f"Failed to repair MongoDBStore indexes: {exc}")
 
         web_logger.info(
             f"MongoDBStore initialized: {db_name}.{collection_name}"
@@ -107,19 +115,17 @@ class MongoDBStore(BaseStore):
 
     def get(self, namespace: tuple[str, ...], key: str) -> Optional[Item]:
         """获取单个存储项"""
-        doc_id = self._namespace_key(namespace, key)
-        doc = self._collection.find_one({"_id": doc_id})
+        doc = self._collection.find_one({"_id": self._namespace_key(namespace, key)})
         if doc is None:
             return None
         return self._doc_to_item(doc)
 
     def put(self, namespace: tuple[str, ...], key: str, value: Any) -> Item:
-        """写入/更新存储项"""
+        """写入/更新存储项（_id 唯一，namespace 数组仅作查询字段）。"""
         doc_id = self._namespace_key(namespace, key)
         now = datetime.now().isoformat()
         serialized = self._serialize_value(value)
 
-        # Upsert（保留 created_at）
         self._collection.update_one(
             {"_id": doc_id},
             {
@@ -171,8 +177,7 @@ class MongoDBStore(BaseStore):
 
     def delete(self, namespace: tuple[str, ...], key: str) -> None:
         """删除存储项"""
-        doc_id = self._namespace_key(namespace, key)
-        self._collection.delete_one({"_id": doc_id})
+        self._collection.delete_one({"_id": self._namespace_key(namespace, key)})
 
     def list_namespaces(
         self,

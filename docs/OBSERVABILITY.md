@@ -23,6 +23,14 @@ conda run -n procurement python -m src.agent.metrics
 
 输出：调用数、成功率、P50/P95/max、按工具分布、最近错误。
 
+P1 增强：
+
+- 追踪文件超过 10MB 自动轮转为 `tool_trace.jsonl.1`；
+- 指标额外输出 `byThread`（按会话聚合）；
+- `ModelUsageMiddleware` 记录每次模型调用的输入/输出 token，指标输出
+  `modelCalls / inputTokens / outputTokens / estimatedCostUsd / byModel`；
+- 单价可用 `MODEL_INPUT_PRICE_PER_M` / `MODEL_OUTPUT_PRICE_PER_M` 覆盖。
+
 ## 2. 真机评测
 
 `scripts/eval_live.py` 不经过 LLM，直接通过 MCP 调真实平台，覆盖 10 个只读场景：

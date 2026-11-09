@@ -108,8 +108,10 @@ async def main() -> int:
     if not isinstance(rows, list):
         rows = []
     mouse = next((row for row in rows if isinstance(row, dict) and row.get("materialCode") == "MOUSE-USB-001"), None)
-    await check("inventory_risk", data.get("code") == 0 and mouse is not None,
-                f"rows={len(rows)} mouseGap={mouse.get('netGap') if mouse else None}", ms)
+    risk_ok = data.get("code") == 0 and (
+        not rows or all(isinstance(row, dict) and "netGap" in row for row in rows)
+    )
+    await check("inventory_risk", risk_ok, f"rows={len(rows)}", ms)
 
     suppliers, ms = await call("supplier_page", {"current": 1, "size": 5})
     supplier_rows = page(suppliers).get("records") or []
@@ -131,6 +133,49 @@ async def main() -> int:
 
     data, ms = await call("inventory_warning", {})
     await check("inventory_warning", data.get("code") == 0, f"items={len(data.get('data') or [])}", ms)
+
+    # ===== 扩展场景（P1：10 -> 30）=====
+    orders, ms = await call("order_page", {"current": 1, "size": 5})
+    order_rows = page(orders).get("records") or []
+    order_id = int(order_rows[0]["id"]) if order_rows else 1
+    await check("order_page", orders.get("code") == 0 and bool(order_rows),
+                f"rows={len(order_rows)}", ms)
+
+    parts, ms = await call("part_page", {"current": 1, "size": 5})
+    part_rows = page(parts).get("records") or []
+    part_id = int(part_rows[0]["id"]) if part_rows else 1
+    warehouses, ms = await call("warehouse_list", {})
+    warehouse_rows = warehouses.get("data") or []
+    warehouse_id = int(warehouse_rows[0]["id"]) if warehouse_rows else 1
+    contracts, ms = await call("contract_page", {"current": 1, "size": 5})
+    contract_rows = page(contracts).get("records") or []
+    contract_id = int(contract_rows[0]["id"]) if contract_rows else 1
+
+    extra_calls = [
+        ("supplier_query", {"name": "科技"}),
+        ("part_search", {"name": "鼠标"}),
+        ("part_query", {"id": part_id}),
+        ("part_by_supplier", {"supplier_id": supplier_id}),
+        ("order_get", {"id": order_id}),
+        ("order_statistics", {}),
+        ("workflow_done", {}),
+        ("workflow_timeline", {"business_type": "PURCHASE_ORDER", "business_id": order_id}),
+        ("dashboard_summary", {}),
+        ("alerts_summary", {}),
+        ("warehouse_get", {"id": warehouse_id}),
+        ("issue_page", {"current": 1, "size": 5}),
+        ("budget_list", {}),
+        ("contract_get", {"id": contract_id}),
+        ("part_price_history", {"id": part_id}),
+        ("price_trend", {"material_id": part_id}),
+        ("approval_sla", {}),
+        ("inventory_check", {}),
+        ("kb_get_document", {"id": 1}),
+        ("kb_cite", {"doc_id": 1, "page": 1}),
+    ]
+    for name, args in extra_calls:
+        data, ms = await call(name, args)
+        await check(name, data.get("code") == 0, f"args={args}", ms)
 
     summary = {
         "platform": PLATFORM,

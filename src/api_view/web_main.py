@@ -6,6 +6,7 @@ import sys
 import os
 import asyncio
 import hmac
+import time
 from pathlib import Path
 from contextlib import asynccontextmanager, suppress
 
@@ -84,6 +85,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_RATE: dict[str, list[float]] = {}
+_RATE_LOCK = asyncio.Lock()
+
+@app.middleware("http")
+async def rate_limit(request: Request, call_next):
+    """按用户限制对话接口频率，避免单一调用方打满模型与工具。"""
+    if request.url.path.startswith("/api/chat"):
+        limit = int(os.getenv("AGENT_RATE_LIMIT_PER_MINUTE", "30"))
+        user = request.headers.get("X-User-Id", "anonymous")
+        now = time.monotonic()
+        async with _RATE_LOCK:
+            bucket = [t for t in _RATE.get(user, []) if now - t < 60]
+            if len(bucket) >= limit:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "too many requests", "retryAfter": 60},
+                )
+            bucket.append(now)
+            _RATE[user] = bucket
+    return await call_next(request)
+
 
 @app.middleware("http")
 async def require_internal_token(request: Request, call_next):

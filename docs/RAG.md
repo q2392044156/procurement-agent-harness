@@ -36,6 +36,15 @@ changed?since=上次同步时间
 
 无命中时返回空结果，Agent 必须回答“知识库没有”，不得用通用知识补答。
 
+P1 增强：
+
+- **混合检索**：`combined = 0.75 × 向量分 + 0.25 × 字符 bigram 重合度`，
+  权重由 `KB_LEXICAL_WEIGHT` 控制；
+- **可见性前置过滤**：检索前取 `visible-doc-ids`，Qdrant filter 只查可见 `doc_id`；
+  S4 门禁包含“只允许 doc 1 时不得召回 doc 2”的断言；
+- **增量状态持久化**：容器内 `KB_STATE_FILE=/app/data/kb_state.json`，
+  由 `kb-state` 卷持久化，重启不重复向量化。
+
 ## 4. 配置
 
 | 变量 | 默认 | 说明 |

@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 from datetime import datetime
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
@@ -37,6 +38,22 @@ _PREFERENCE_LABELS = {
     "preferred_currency": "计价货币偏好",
     "preferred_language": "回复语言偏好",
 }
+
+
+_PII_PATTERNS = [
+    re.compile(r"1[3-9]\d{9}"),                    # 手机号
+    re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+"),        # 邮箱
+    re.compile(r"sk-[A-Za-z0-9]{10,}"),            # API Key
+]
+
+
+def _redact(text: str) -> str:
+    """记忆写入前脱敏手机号/邮箱/API Key，避免长期保存敏感信息。"""
+    if not isinstance(text, str):
+        return text
+    for pattern in _PII_PATTERNS:
+        text = pattern.sub("[REDACTED]", text)
+    return text
 
 
 def _slug(text: str, limit: int = 48) -> str:
@@ -98,6 +115,8 @@ class MemoryKeeper:
     def put(self, item: MemoryItem) -> Optional[MemoryItem]:
         if not self.available or item is None:
             return None
+        item.content = _redact(item.content)
+        item.summary = _redact(item.summary)
         item.updated_at = now_iso()
         try:
             self._store.put(self.namespace(item.type), item.store_key, item.to_dict())

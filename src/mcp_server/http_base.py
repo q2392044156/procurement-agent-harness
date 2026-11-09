@@ -1,22 +1,37 @@
 """
 HTTP 基础客户端模块
 httpx AsyncClient 单例（连接池、超时），封装 GET/POST/PUT/PATCH/DELETE
+
+错误统一为：
+{"code":<status>, "message":..., "data":..., "errorType":..., "retryable":bool}
 """
-import httpx
-import json
 import os
-from typing import Any, Optional
+from typing import Optional
+
+import httpx
+
 from .server_config import ERP_BASE_URL, HTTP_TIMEOUT, HTTP_MAX_CONNECTIONS
+
+_ERROR_TYPES = {
+    400: "bad_request",
+    401: "unauthorized",
+    403: "forbidden",
+    404: "not_found",
+    409: "conflict",
+    422: "validation",
+    429: "rate_limited",
+    500: "server_error",
+    502: "bad_gateway",
+    503: "unavailable",
+    504: "timeout",
+}
+_RETRYABLE = {429, 500, 502, 503, 504}
 
 
 class ERPHttpClient:
     """ERP 后端 HTTP 客户端单例"""
-    """
-    HTTP 客户端采用单例模式，因为其维护昂贵的连接池资源，全局共享可复用 TCP 连接、
-    显著提升性能并统一超时/并发配置；而 LLM 实例不适合单例，因为不同任务需要独立的模型、温度、API Key 等参数配置，
-    且调用本身是无状态的，按需创建更灵活、更经济。
-    """
-    _instance: Optional['ERPHttpClient'] = None
+
+    _instance: Optional["ERPHttpClient"] = None
     _client: Optional[httpx.AsyncClient] = None
 
     def __new__(cls):
@@ -38,38 +53,46 @@ class ERPHttpClient:
             )
         return self._client
 
-    async def get(self, path: str, params: Optional[dict] = None) -> dict:
-        """GET 请求"""
-        # 过滤掉 None 值的参数
+    def _headers(self, extra: Optional[dict] = None) -> dict:
+        merged = self._forward_headers()
+        if extra:
+            merged.update({str(k): str(v) for k, v in extra.items()})
+        return merged
+
+    async def get(self, path: str, params: Optional[dict] = None,
+                  headers: Optional[dict] = None) -> dict:
         if params:
             params = {k: v for k, v in params.items() if v is not None}
-        response = await self.client.get(path, params=params, headers=self._forward_headers())
+        response = await self.client.get(path, params=params, headers=self._headers(headers))
         return self._handle_response(response)
 
-    async def post(self, path: str, json_data: Optional[dict] = None, params: Optional[dict] = None) -> dict:
-        """POST 请求"""
+    async def post(self, path: str, json_data: Optional[dict] = None,
+                   params: Optional[dict] = None, headers: Optional[dict] = None) -> dict:
         if params:
             params = {k: v for k, v in params.items() if v is not None}
-        response = await self.client.post(path, json=json_data, params=params, headers=self._forward_headers())
+        response = await self.client.post(
+            path, json=json_data, params=params, headers=self._headers(headers)
+        )
         return self._handle_response(response)
 
-    async def put(self, path: str, json_data: Optional[dict] = None, params: Optional[dict] = None) -> dict:
-        """PUT 请求"""
+    async def put(self, path: str, json_data: Optional[dict] = None,
+                  params: Optional[dict] = None, headers: Optional[dict] = None) -> dict:
         if params:
             params = {k: v for k, v in params.items() if v is not None}
-        response = await self.client.put(path, json=json_data, params=params, headers=self._forward_headers())
+        response = await self.client.put(
+            path, json=json_data, params=params, headers=self._headers(headers)
+        )
         return self._handle_response(response)
 
-    async def patch(self, path: str, params: Optional[dict] = None) -> dict:
-        """PATCH 请求"""
+    async def patch(self, path: str, params: Optional[dict] = None,
+                    headers: Optional[dict] = None) -> dict:
         if params:
             params = {k: v for k, v in params.items() if v is not None}
-        response = await self.client.patch(path, params=params, headers=self._forward_headers())
+        response = await self.client.patch(path, params=params, headers=self._headers(headers))
         return self._handle_response(response)
 
-    async def delete(self, path: str) -> dict:
-        """DELETE 请求"""
-        response = await self.client.delete(path, headers=self._forward_headers())
+    async def delete(self, path: str, headers: Optional[dict] = None) -> dict:
+        response = await self.client.delete(path, headers=self._headers(headers))
         return self._handle_response(response)
 
     def _forward_headers(self) -> dict:
@@ -77,6 +100,7 @@ class ERPHttpClient:
         incoming = {}
         try:
             from fastmcp.server.dependencies import get_http_headers
+
             incoming = get_http_headers() or {}
         except Exception:
             pass
@@ -88,29 +112,30 @@ class ERPHttpClient:
         }
 
     def _handle_response(self, response: httpx.Response) -> dict:
-        """统一响应处理"""
         try:
             data = response.json()
-            if response.status_code == 200:
-                return data
-            else:
-                return {
-                    "code": response.status_code,
-                    "message": f"HTTP Error: {response.status_code}",
-                    "data": data,
-                }
-        except json.JSONDecodeError:
-            return {
-                "code": response.status_code,
-                "message": f"Response not JSON: {response.text[:500]}",
-                "data": None,
-            }
+        except ValueError:
+            data = None
+
+        if response.status_code == 200:
+            return data if isinstance(data, dict) else {"code": 0, "data": data}
+
+        message = ""
+        if isinstance(data, dict):
+            message = str(data.get("message") or "")
+        if not message:
+            message = f"HTTP {response.status_code}"
+        return {
+            "code": response.status_code,
+            "message": message,
+            "data": data,
+            "errorType": _ERROR_TYPES.get(response.status_code, "http_error"),
+            "retryable": response.status_code in _RETRYABLE,
+        }
 
     async def close(self):
-        """关闭客户端"""
         if self._client and not self._client.is_closed:
             await self._client.aclose()
 
 
-# 全局单例
 erp_client = ERPHttpClient()

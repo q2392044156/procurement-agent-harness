@@ -65,6 +65,15 @@ def main() -> int:
           and preferences.get("preferred_currency") == "CNY",
           json.dumps(preferences, ensure_ascii=False)[:80])
 
+    keeper.upsert_semantic("contact_note", "电话13800138000 邮箱buyer@example.com")
+    contact = keeper.active_semantic("contact_note")
+    check("pii redaction",
+          contact is not None
+          and "13800138000" not in contact.content
+          and "buyer@example.com" not in contact.content
+          and "[REDACTED]" in contact.content,
+          f"content={getattr(contact, 'content', None)}")
+
     catalog = SkillCatalog(ROOT / "src" / "skills", store=store, user_id=uid)
     entries, warnings = catalog.entries()
     ids = [entry["id"] for entry in entries]

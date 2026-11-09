@@ -33,6 +33,11 @@ def _thread_id() -> str | None:
 def _append(record: dict) -> None:
     TRACE_FILE.parent.mkdir(parents=True, exist_ok=True)
     with _LOCK:
+        try:
+            if TRACE_FILE.exists() and TRACE_FILE.stat().st_size > 10 * 1024 * 1024:
+                os.replace(TRACE_FILE, TRACE_FILE.with_suffix(TRACE_FILE.suffix + ".1"))
+        except OSError:
+            pass
         with TRACE_FILE.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
 

@@ -315,6 +315,7 @@ def create_main_agent(
     from .middlewares.memory_consolidation import MemoryConsolidationMiddleware
     from .middlewares.warm_memory import WarmMemoryMiddleware, WARM_MEMORY_SLOT
     from .middlewares.sandbox_breaker import SandboxCircuitBreakerMiddleware
+    from .middlewares.model_usage import ModelUsageMiddleware
     # Harness 阶段状态机 + 评审器（真 Harness 架构核心）
     from .harness import HarnessPhaseMiddleware, load_harness_config
     from .middlewares.review_gate import ReviewExecutionGate, SafeRubricMiddleware
@@ -362,6 +363,7 @@ def create_main_agent(
         ),                                                            # 1. 沙箱健康检查 + 重建
         HarnessPhaseMiddleware(router_model=router_llm),               # 2. 混合路由 + rubric 注入
         ContextInjectionMiddleware(user_context=user_context),        # 3. 用户上下文注入
+        ModelUsageMiddleware(user_id=user_context.user_id),           # 3.5 模型用量统计
         WarmMemoryMiddleware(store=store, user_id=user_context.user_id),
         ProgressiveSkillsMiddleware(skill_catalog),
         skills_sync_middleware,                                       # 4. 基础 Skills 同步
