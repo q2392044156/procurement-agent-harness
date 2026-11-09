@@ -26,12 +26,13 @@ from .schema import ProcurementContext
 from .log_utils import agent_logger
 from .memory.config import DEFAULT_MEMORY_CONFIG
 from .memory.keeper import MemoryKeeper
-from .memory.prompts import MAIN_SYSTEM_PROMPT, MEMORY_USAGE_PROMPT
+from .prompts.main import MAIN_SYSTEM_PROMPT, MEMORY_USAGE_PROMPT
 
 # 项目路径
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 SKILLS_DIR = PROJECT_ROOT / "src" / "skills"
 MEMORY_DIR = Path(__file__).parent / "memory"
+PROMPTS_DIR = Path(__file__).parent / "prompts"
 
 
 def _upload_project_to_sandbox(sandbox) -> bool:
@@ -410,7 +411,7 @@ def create_main_agent(
         middleware=middlewares,
         subagents=subagents if subagents else None,
         skills=None,
-        memory=[str(MEMORY_DIR / "AGENTS.md")],
+        memory=[str(PROMPTS_DIR / "AGENTS.md")],
         backend=composite_backend,
         interrupt_on=None,
         checkpointer=checkpointer,

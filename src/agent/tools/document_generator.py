@@ -27,7 +27,7 @@ from ..backends.sandbox_holder import get_sandbox, has_sandbox
 # 沙箱内输出目录
 SANDBOX_OUTPUT_DIR = "/workspace/output"
 # 本地回退目录
-LOCAL_DOWNLOAD_DIR = Path(__file__).parent.parent.parent / "download"
+LOCAL_DOWNLOAD_DIR = Path(__file__).resolve().parents[3] / "data" / "download"
 
 
 @tool

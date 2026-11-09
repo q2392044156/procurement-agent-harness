@@ -11,3 +11,4 @@ bm25_stats.json
 .pytest_cache
 samples/kb_corpus
 evals/live/summary.json
+data

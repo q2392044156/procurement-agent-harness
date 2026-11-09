@@ -27,7 +27,7 @@ from src.agent.config import skills_store_namespace
 from src.agent.middlewares.sandbox_health import SandboxHealthMiddleware
 from src.agent.middlewares.skills_sync import SkillsSyncMiddleware
 from src.agent.middlewares.user_skills_restore import UserSkillsRestoreMiddleware
-from src.api_view.mongodb_store import MongoDBStore
+from src.infra.mongodb_store import MongoDBStore
 from src.agent.harness import (
     HarnessPhaseMiddleware,
     load_harness_config,

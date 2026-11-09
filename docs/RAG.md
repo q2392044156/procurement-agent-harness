@@ -18,7 +18,7 @@ changed?since=上次同步时间
   → 切分（800 字符，120 重叠，按标点/段落回退）
   → bge-m3 向量化（1024 维，归一化）
   → 删除该文档旧切片 → 写入新切片（幂等 point id）
-  → 更新 .kb_state.json（since + 每文档 updatedAt）
+  → 更新 data/kb_state.json（since + 每文档 updatedAt）
 ```
 
 归档/删除：同步时删除对应 `doc_id` 的全部切片；检索前再用 `visible-doc-ids` 兜底，避免越权召回。
@@ -105,7 +105,7 @@ conda run -n procurement python scripts/kb_ingest.py
 conda run -n procurement python scripts/verify_phase_s4.py
 ```
 
-重建索引：删除 `.kb_state.json`（或把 `since` 置为 1970）后重新执行入库；Qdrant 数据可随时丢弃重建。
+重建索引：删除 `data/kb_state.json`（或把 `since` 置为 1970）后重新执行入库；Qdrant 数据可随时丢弃重建。
 
 ## 6. 已知限制
 

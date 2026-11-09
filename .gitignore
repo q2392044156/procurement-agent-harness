@@ -68,3 +68,7 @@ samples/kb_corpus/*.docx
 Thumbs.db
 Desktop.ini
 bm25_stats.json
+# runtime downloads
+data/download/
+# runtime KB state
+data/*.json

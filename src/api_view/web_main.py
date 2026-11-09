@@ -123,8 +123,8 @@ app.include_router(chat_router)
 app.include_router(history_router)
 
 # 文件下载目录（图表等生成文件）
-DOWNLOAD_DIR = Path(__file__).resolve().parent.parent / "download"
-DOWNLOAD_DIR.mkdir(exist_ok=True)
+DOWNLOAD_DIR = Path(__file__).resolve().parents[2] / "data" / "download"
+DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @app.get("/api/download/{filename}")

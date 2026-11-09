@@ -78,7 +78,7 @@ $code = $LASTEXITCODE
 if ($code -ne 0) { $ErrorActionPreference = $previous; exit $code }
 
 Write-Host 'Rebuilding Qdrant index...'
-Remove-Item '.kb_state.json' -ErrorAction SilentlyContinue
+Remove-Item 'data\kb_state.json' -ErrorAction SilentlyContinue
 & $conda run --no-capture-output -n procurement python scripts/kb_ingest.py
 $code = $LASTEXITCODE
 $ErrorActionPreference = $previous

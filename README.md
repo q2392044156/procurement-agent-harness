@@ -128,22 +128,25 @@ flowchart LR
 ```text
 procurement-agent-harness/
 ├── src/
-│   ├── agent/                # 主 Agent、子 Agent、中间件、记忆、工具
+│   ├── agent/                # 主 Agent、子 Agent、中间件、记忆、提示词、工具
 │   │   ├── main_agent.py     # 组装 LLM / 工具 / 子 Agent / 中间件
 │   │   ├── harness.py        # 阶段状态机 + rubric 评审
+│   │   ├── prompts/          # 系统提示词与 AGENTS.md
 │   │   ├── memory/           # HOT/WARM/COLD 三层记忆
 │   │   ├── middlewares/      # 上下文、记忆、沙箱、追踪
 │   │   ├── subagents/        # YAML 声明的子 Agent
 │   │   └── tools/            # MCP 客户端、图表、文档、联网搜索
-│   ├── mcp_server/           # MCP Server 与 51 个工具
+│   ├── mcp_server/           # MCP Server 与 52 个工具
 │   ├── kb/                   # RAG：解析、切分、bge-m3、Qdrant、检索
-│   ├── api_view/             # FastAPI + SSE + MongoDB Store
+│   ├── api_view/             # FastAPI + SSE + 历史会话
+│   ├── infra/                # MongoDBStore 等跨层适配器
 │   ├── skills/               # 采购技能（SKILL.md）
 │   └── test/                 # 单元/集成测试
 ├── scripts/                  # 阶段门禁、评测、语料、入库
 ├── evals/                    # 业务评测与真机评测结果
 ├── samples/kb_corpus/        # 评测语料生成器与标注
-├── docs/                     # RAG、技能、可观测、状态
+├── docs/                     # 架构、RAG、技能、可观测、状态
+├── data/                     # 运行期下载文件（忽略）
 ├── Dockerfile
 ├── requirements.txt
 ├── .env.example

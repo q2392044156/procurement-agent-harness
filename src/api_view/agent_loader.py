@@ -67,7 +67,7 @@ class AgentLoader:
         web_logger.info("Initializing shared Agent resources...")
         try:
             from langgraph.checkpoint.mongodb import MongoDBSaver
-            from .mongodb_store import MongoDBStore
+            from ..infra.mongodb_store import MongoDBStore
             from .web_config import MONGODB_URI, MONGODB_DB_NAME
 
             # 生产级存储：MongoDB 持久化

@@ -1,6 +1,6 @@
 """
 沙箱文件下载工具（Harness — 真实 Docker 文件提取）
-从沙箱容器中下载文件到宿主机 src/download/ 目录，供用户通过 HTTP 访问。
+从沙箱容器中下载文件到宿主机 data/download/ 目录，供用户通过 HTTP 访问。
 
 工作原理：
 1. 通过 Docker SDK 连接到 erp-sandbox 容器
@@ -21,7 +21,7 @@ from langchain_core.tools import tool
 
 from ..log_utils import agent_logger
 
-DOWNLOAD_DIR = Path(__file__).parent.parent.parent / "download"
+DOWNLOAD_DIR = Path(__file__).resolve().parents[3] / "data" / "download"
 
 
 def _get_docker_container():

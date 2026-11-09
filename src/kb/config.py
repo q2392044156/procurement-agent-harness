@@ -16,7 +16,7 @@ MIN_SCORE = float(os.getenv("KB_MIN_SCORE", "0.40"))
 LEXICAL_WEIGHT = float(os.getenv("KB_LEXICAL_WEIGHT", "0.25"))
 CHUNK_SIZE = int(os.getenv("KB_CHUNK_SIZE", "800"))
 CHUNK_OVERLAP = int(os.getenv("KB_CHUNK_OVERLAP", "120"))
-STATE_FILE = Path(os.getenv("KB_STATE_FILE", str(ROOT / ".kb_state.json")))
+STATE_FILE = Path(os.getenv("KB_STATE_FILE", str(ROOT / "data" / "kb_state.json")))
 BM25_STATS_FILE = Path(
     os.getenv("KB_BM25_STATS_FILE", str(STATE_FILE.parent / "bm25_stats.json"))
 )
