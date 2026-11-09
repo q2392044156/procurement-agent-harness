@@ -4,6 +4,7 @@ FastMCP 实例创建，注册所有 tools，SSE 传输协议
 """
 import sys
 import os
+import threading
 
 # 确保项目根目录在 path 中
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -40,6 +41,19 @@ register_analytics_tools(mcp)
 register_kb_tools(mcp)
 
 
+def _warmup_kb() -> None:
+    """后台预热：加载 bge-m3 并确保 Qdrant 集合存在，降低首次检索延迟。"""
+    try:
+        from src.kb.embedder import dimension
+        from src.kb.store import ensure_collection
+
+        ensure_collection(dimension())
+        print("[MCP] KB warmup finished (bge-m3 loaded, collection ready)")
+    except Exception as exc:  # noqa: BLE001
+        print(f"[MCP] KB warmup skipped: {type(exc).__name__}: {exc}")
+
+
 if __name__ == "__main__":
-    print(f"🚀 Starting MCP Server on {MCP_HOST}:{MCP_PORT} (SSE transport)")
+    print(f"[MCP] Starting on {MCP_HOST}:{MCP_PORT} (SSE transport)")
+    threading.Thread(target=_warmup_kb, name="kb-warmup", daemon=True).start()
     mcp.run(transport="sse", host=MCP_HOST, port=MCP_PORT)

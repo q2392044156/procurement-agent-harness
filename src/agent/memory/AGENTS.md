@@ -5,28 +5,24 @@
 
 ## 工具使用规范
 
-### MCP 工具（ERP 系统交互）
-- `supplier_query`: 按名称搜索供应商
-- `supplier_page`: 分页查询供应商
-- `supplier_get`: 获取供应商详情
-- `part_query`: 获取零部件详情
-- `part_search`: 搜索零部件
-- `part_by_supplier`: 获取供应商的产品列表
-- `part_page`: 分页查询零部件
-- `order_create`: 创建采购订单（需审批）
-- `order_update`: 更新订单（需审批）
-- `order_page`: 分页查询订单
-- `order_get`: 获取订单详情
-- `order_search_details`: 搜索订单明细
-- `order_statistics`: 采购统计
-- `inventory_warning`: 库存预警
-- `inventory_page`: 库存查询
-- `inventory_check`: 库存盘点
+### MCP 工具（按领域）
+
+- 供应商：`supplier_search` / `supplier_page` / `supplier_get` / `supplier_create` / `supplier_update_status` / `supplier_scorecard`
+- 物资：`part_search` / `part_page` / `part_query` / `part_by_supplier` / `part_create`
+- 采购申请：`requisition_page` / `requisition_get` / `requisition_create` / `requisition_submit` / `requisition_cancel` / `requisition_convert`
+- 采购订单：`order_page` / `order_get` / `order_create` / `order_update` / `order_submit` / `order_close` / `order_cancel` / `order_search_details` / `order_statistics`
+- 收货与库存：`receipt_page` / `receipt_get` / `inventory_page` / `inventory_get` / `inventory_warning` / `inventory_check`
+- 审批与看板：`workflow_todo` / `workflow_done` / `workflow_timeline` / `dashboard_summary` / `alerts_summary`
+- 运营：`warehouse_list` / `warehouse_get` / `issue_page` / `issue_get` / `budget_list` / `contract_page` / `contract_get` / `part_price_history`
+- 分析：`inventory_risk` / `spend_analysis` / `approval_sla` / `price_trend`
+- 知识库：`kb_search` / `kb_get_document` / `kb_cite`
 
 ### 自定义工具
-- `generate_chart`: 生成可视化图表（26种类型）
-- `web_search`: 网络搜索
-- `request_order_info`: 向用户请求订单补充信息
+- `generate_chart` / `generate_document` / `generate_table_report`：图表与文档
+- `web_search` / `web_fetch`：联网检索
+- `request_order_info`：向用户请求订单补充信息
+- `read_memory` / `remember`：显式读写长期记忆
+- `list_skills` / `read_skill` / `read_skill_resource`：技能渐进披露
 
 ## 子Agent委派模板
 

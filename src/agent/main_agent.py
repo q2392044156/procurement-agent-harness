@@ -13,6 +13,7 @@ from deepagents.backends import CompositeBackend, StoreBackend, LocalShellBacken
 from langchain.agents.middleware import (
     ModelCallLimitMiddleware,
     ToolCallLimitMiddleware,
+    HumanInTheLoopMiddleware,
 )
 
 from .config import (
@@ -374,6 +375,8 @@ def create_main_agent(
         # needs_revision 时自动打回模型重做，形成真实 Review 回路（非 prompt 软约束）
         SafeRubricMiddleware(model=grader_llm, max_iterations=_review_max_iterations),
         ReviewExecutionGate(_harness_config),  # after_agent 逆序：先升级，再审查
+        # 写操作人工确认：显式挂载，避免 create_deep_agent 内部装配差异导致静默失效
+        HumanInTheLoopMiddleware(interrupt_on=INTERRUPT_ON_TOOLS),
         # --- 框架内置中间件（调用限制）---
         ModelCallLimitMiddleware(run_limit=MAX_MODEL_CALLS),          # 模型调用上限
         ToolCallLimitMiddleware(run_limit=MAX_TOOL_CALLS),            # 工具调用上限
@@ -407,7 +410,7 @@ def create_main_agent(
         skills=None,
         memory=[str(MEMORY_DIR / "AGENTS.md")],
         backend=composite_backend,
-        interrupt_on=INTERRUPT_ON_TOOLS,
+        interrupt_on=None,
         checkpointer=checkpointer,
         store=store,
         name="procurement-main-agent",

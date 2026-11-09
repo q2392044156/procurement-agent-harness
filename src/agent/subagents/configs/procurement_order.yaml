@@ -6,9 +6,11 @@ description: >
 tools:
   - order_create
   - order_update
+  - order_submit
+  - order_close
+  - order_cancel
   - order_get
   - order_page
-  - order_update_status
   - request_order_info
   - part_query
   - part_search

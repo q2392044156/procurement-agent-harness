@@ -13,27 +13,22 @@ def register_order_tools(mcp: FastMCP):
 
     @mcp.tool()
     async def order_create(order_data: str) -> str:
-        """创建采购订单。
+        """创建直采采购订单（需人工确认）。
 
         Args:
-            order_data: 订单数据JSON字符串，格式：
+            order_data: 订单 JSON 字符串，字段与平台契约一致：
                 {
-                    "orderNumber": "PO20260101001",  // 必填，订单编号
-                    "totalAmount": 1000.0,           // 总金额
-                    "status": 0,                     // 状态：0=待审核,1=已审核,2=已发货,3=已收货,4=已完成
-                    "remark": "备注",
-                    "orderDetail": [                 // 订单明细列表
-                        {
-                            "partId": 1,            // 必填，零部件ID
-                            "quantity": 100,        // 必填，数量>=1
-                            "unitPrice": 25.5,      // 必填，单价
-                            "remark": "明细备注"
-                        }
+                    "supplierId": 1,                 // 必填，合格供应商ID
+                    "deliveryDate": "2026-11-20",    // 必填，交付日期 YYYY-MM-DD
+                    "taxRate": 0.13,                 // 税率 0~1
+                    "terms": "月结30天",              // 可选
+                    "orderDetail": [                 // 必填，至少一条
+                        {"partId": 1, "quantity": 10, "unitPrice": 25.5, "remark": "可选"}
                     ]
                 }
 
         Returns:
-            创建结果JSON，包含订单ID和完整订单信息
+            创建后的订单详情 JSON（含 id、orderNo、status、items）
         """
         try:
             data = json.loads(order_data) if isinstance(order_data, str) else order_data
@@ -44,14 +39,17 @@ def register_order_tools(mcp: FastMCP):
 
     @mcp.tool()
     async def order_update(id: int, order_data: str) -> str:
-        """更新采购订单。
+        """修改草稿/驳回状态的订单（需人工确认）。
 
         Args:
             id: 订单ID
-            order_data: 更新的订单数据JSON字符串，格式同 order_create
+            order_data: 字段同 order_create；其中 orderDetail 必须提交全部明细：
+                {"supplierId": 1, "deliveryDate": "2026-11-20", "taxRate": 0.13,
+                 "terms": "月结30天",
+                 "items": [{"id": 5, "unitPrice": 25.5, "remark": "可选"}]}
 
         Returns:
-            更新结果JSON
+            修改后的订单详情 JSON
         """
         try:
             data = json.loads(order_data) if isinstance(order_data, str) else order_data
@@ -65,7 +63,7 @@ def register_order_tools(mcp: FastMCP):
         current: int = 1,
         size: int = 10,
         order_number: str = None,
-        status: int = None,
+        status: str = None,
         start_date: str = None,
         end_date: str = None,
     ) -> str:
@@ -74,8 +72,9 @@ def register_order_tools(mcp: FastMCP):
         Args:
             current: 当前页码，默认1
             size: 每页大小，默认10
-            order_number: 订单编号（可选，模糊匹配）
-            status: 订单状态（可选）：0=待审核,1=已审核,2=已发货,3=已收货,4=已完成
+            order_number: 订单号（可选，模糊匹配）
+            status: 订单状态（可选）：DRAFT/PENDING_APPROVAL/APPROVED/PARTIALLY_RECEIVED/
+                RECEIVED/CANCELLED/CLOSED
             start_date: 开始日期（可选），格式 yyyy-MM-dd
             end_date: 结束日期（可选），格式 yyyy-MM-dd
 
@@ -152,18 +151,32 @@ def register_order_tools(mcp: FastMCP):
         return json.dumps(result, ensure_ascii=False, indent=2)
 
     @mcp.tool()
-    async def order_update_status(id: int, status: int) -> str:
-        """更新订单状态。
+    async def order_submit(id: int) -> str:
+        """提交订单进入审批（需人工确认）。仅草稿/驳回状态可提交。
 
         Args:
             id: 订单ID
-            status: 新状态：0=待审核,1=已审核,2=已发货,3=已收货,4=已完成
 
         Returns:
-            操作结果JSON
+            操作结果 JSON
         """
         result = await erp_client.patch(
-            f"/api/orders/update-status/{id}", params={"status": status}
+            f"/api/orders/update-status/{id}", params={"status": "1"}
+        )
+        return json.dumps(result, ensure_ascii=False, indent=2)
+
+    @mcp.tool()
+    async def order_close(id: int) -> str:
+        """关闭已完成收货的订单。
+
+        Args:
+            id: 订单ID
+
+        Returns:
+            操作结果 JSON
+        """
+        result = await erp_client.patch(
+            f"/api/orders/update-status/{id}", params={"status": "4"}
         )
         return json.dumps(result, ensure_ascii=False, indent=2)
 

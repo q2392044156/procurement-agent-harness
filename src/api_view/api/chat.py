@@ -154,8 +154,11 @@ async def stream_chat_response(
                                 })
 
                     # --- 中断检测 ---
-                    if chunk.get("interrupts"):
-                        for interrupt_item in chunk["interrupts"]:
+                    # LangGraph v1.2 的 values 流用 __interrupt__ 返回中断，
+                    # 旧代码只看 interrupts，导致 HITL 被静默吞掉。
+                    pending_interrupts = chunk.get("interrupts") or chunk.get("__interrupt__")
+                    if pending_interrupts:
+                        for interrupt_item in pending_interrupts:
                             interrupt_value = (
                                 interrupt_item.value
                                 if hasattr(interrupt_item, "value")
@@ -171,11 +174,13 @@ async def stream_chat_response(
                                         "extracted_data": interrupt_value.get("current_data", {}),
                                     })
                                 elif "action_requests" in interrupt_value:
+                                    actions = interrupt_value.get("action_requests") or []
+                                    first = actions[0] if actions else {}
                                     yield sse_event("interrupt", {
                                         "interrupt_type": "hitl_approval",
-                                        "tool_name": interrupt_value.get("tool_name", ""),
-                                        "tool_args": interrupt_value.get("action_requests", {}),
-                                        "order_data": interrupt_value.get("action_requests", {}),
+                                        "tool_name": first.get("name", ""),
+                                        "tool_args": first.get("args", {}),
+                                        "order_data": first.get("args", {}),
                                     })
                                 else:
                                     # 通用中断（interrupt_on 触发的审批）
