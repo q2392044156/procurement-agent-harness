@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from pymongo.errors import PyMongoError
 
 from .api.chat import router as chat_router
 from .api.history import router as history_router
@@ -76,6 +77,21 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(PyMongoError)
+async def mongo_unavailable_handler(request: Request, exc: PyMongoError):
+    """Mongo 不可用时返回可重试的 503，而不是裸 500。"""
+    web_logger.error(f"MongoDB unavailable on {request.url.path}: {exc}")
+    return JSONResponse(
+        status_code=503,
+        content={
+            "detail": "会话存储暂时不可用，请稍后重试",
+            "code": "DEPENDENCY_UNAVAILABLE",
+            "dependency": "mongodb",
+            "retryable": True,
+        },
+    )
 
 # CORS 全开（开发环境）
 app.add_middleware(
