@@ -164,7 +164,7 @@ procurement-agent-harness/
 └── README.md
 ```
 
-## 完整启动与关闭
+## 快速启动与运行
 
 Harness 依赖同级目录的业务平台：
 
@@ -174,35 +174,38 @@ workspace/
 └── procurement-agent-harness/
 ```
 
-### 前置条件
+### 环境要求
 
 - Git
 - Docker Desktop / Docker Engine + Docker Compose v2
 - 一个可用的 DeepSeek API Key
 - 平台仓库位于同级目录
+- 本机 `3000`、`8080`、`8000`、`8001`、`9000`、`9001`、`6333`、`27017` 端口未被占用
 
-### 1. 准备平台
+### 1. 配置环境
+
+#### 平台 `.env`
 
 ```powershell
 cd ..\smart-procurement-platform
 Copy-Item .env.example .env
 ```
 
-编辑平台 `.env`：
+至少配置：
 
 ```dotenv
 AGENT_ENABLED=true
 AGENT_INTERNAL_TOKEN=<至少 32 位随机值>
 ```
 
-### 2. 准备 Harness
+#### Harness `.env`
 
 ```powershell
 cd ..\procurement-agent-harness
 Copy-Item .env.example .env
 ```
 
-编辑 `.env`：
+至少配置：
 
 ```dotenv
 DEEPSEEK_API_KEY=sk-...
@@ -214,19 +217,22 @@ MONGODB_URI=mongodb://localhost:27017
 QDRANT_URL=http://localhost:6333
 ```
 
-### 3. 构建镜像
+> 两个 `.env` 中的 `AGENT_INTERNAL_TOKEN` 必须完全一致；不要提交真实密钥。
+
+### 2. 构建镜像
 
 ```powershell
+cd ..\procurement-agent-harness
 .\scripts\build-images.ps1
 ```
 
-只构建 `procuremind-agent:latest`，MCP 复用同一镜像，避免重复构建和导出 3GB+ 镜像。
+只会构建 `procuremind-agent:latest`，MCP 复用同一镜像。
 
-> 日常启动不要再加 `--build`；只有 Dockerfile、依赖或源码变化时才重新构建。
+> 只有 Dockerfile、依赖或源码变化时才需要重新构建；日常启动不要加 `--build`。
 
-### 4. 启动完整环境
+### 3. 首次启动
 
-推荐直接清库、重建主数据/知识库，并导入 12 个月业务演示数据：
+首次启动会清空数据库、重建主数据/知识库，并导入演示业务数据：
 
 ```powershell
 .\scripts\reset_demo.ps1 -Agent -WithBusiness
@@ -240,16 +246,9 @@ QDRANT_URL=http://localhost:6333
 - 重建 Qdrant 索引；
 - 导入 120 张采购订单、95 张收货单、48 张领料和库存流水。
 
-如果只想启动、不重置数据：
+> 首次启动会下载 bge-m3，约 2.2GB；可通过 `.env` 配置 `HF_ENDPOINT` 和 `HF_HOME`。
 
-```powershell
-cd ..\smart-procurement-platform
-.\scripts\demo-up.ps1 -Agent
-```
-
-首次启动会下载 bge-m3，约 2.2GB；可通过 `.env` 配置 `HF_ENDPOINT` 和 `HF_HOME`。
-
-### 5. 访问入口
+### 4. 访问入口
 
 | 入口 | 地址 |
 |---|---|
@@ -261,20 +260,38 @@ cd ..\smart-procurement-platform
 | 平台后端健康检查 | http://localhost:8080/actuator/health |
 | MinIO 控制台 | http://localhost:9001（端口冲突时为 9101） |
 
-### 6. 关闭
+### 5. 日常启动
+
+首次初始化完成后，日常启动不需要重建镜像：
 
 ```powershell
 cd ..\smart-procurement-platform
-docker compose --profile agent down
+docker compose --profile agent up -d
 ```
 
-保留数据卷；如果确认清空全部数据：
+如果修改了 Harness 代码并重新构建镜像：
 
 ```powershell
-docker compose --profile agent down -v
+cd ..\procurement-agent-harness
+.\scripts\build-images.ps1
+
+cd ..\smart-procurement-platform
+docker compose --profile agent up -d --force-recreate agent mcp
 ```
 
-只停止前后端、保留基础设施：
+### 6. 日常关闭
+
+```powershell
+cd ..\smart-procurement-platform
+docker compose --profile agent down --remove-orphans
+```
+
+说明：
+
+- `down` 会删除容器和网络，保留 MySQL、MinIO、MongoDB、Qdrant 数据卷；
+- 下次启动必须用 `up -d`，不要用 `docker compose start`；
+- 需要同时清空数据时才执行 `docker compose --profile agent down -v`；
+- 只停止前后端、保留基础设施：
 
 ```powershell
 docker compose stop frontend backend
@@ -286,40 +303,6 @@ docker compose stop frontend backend
 docker compose start
 ```
 
-### 宿主进程方式（调试用）
-
-如果不想把 Harness 放进容器：
-
-```powershell
-# 1. 平台只启动基础设施和业务服务
-cd ..\smart-procurement-platform
-docker compose up -d mysql redis minio backend frontend
-
-# 2. 启动 Qdrant / MongoDB
-docker compose --profile agent up -d mongo qdrant
-
-# 3. 安装 Harness 依赖
-cd ..\procurement-agent-harness
-conda create -n procurement python=3.12 -y
-conda activate procurement
-pip install --index-url https://download.pytorch.org/whl/cpu torch
-pip install -r requirements.txt
-
-# 4. 终端 A：MCP
-python -m src.mcp_server.server_main
-
-# 5. 终端 B：Agent API
-python -m src.api_view.web_main
-```
-
-平台 `.env` 需要：
-
-```dotenv
-AGENT_ENABLED=true
-AGENT_BASE_URL=http://host.docker.internal:8000
-```
-
-关闭：两个终端按 `Ctrl+C`，再回到平台执行 `docker compose down`。
 
 ## 演示账号
 
