@@ -2,11 +2,13 @@
 # Usage:
 #   .\scripts\reset_demo.ps1            # platform only
 #   .\scripts\reset_demo.ps1 -Agent     # platform + agent profile
+#   .\scripts\reset_demo.ps1 -Agent -WithBusiness  # 同时导入 120 张订单演示数据
 # WARNING: removes MySQL / Redis / MinIO / Mongo / Qdrant volumes.
 
 param(
     [switch]$Agent,
-    [switch]$SkipKb
+    [switch]$SkipKb,
+    [switch]$WithBusiness
 )
 
 $ErrorActionPreference = 'Stop'
@@ -59,6 +61,12 @@ for ($i = 0; $i -lt 120; $i++) {
     Start-Sleep -Seconds 3
 }
 if (-not $healthy) { throw 'Backend did not become healthy in time' }
+
+if ($WithBusiness) {
+    Write-Host 'Applying demo business data...'
+    & (Join-Path $platform 'sql\apply_demo_data.ps1')
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
 
 if ($SkipKb) { exit 0 }
 
