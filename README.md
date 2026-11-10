@@ -220,6 +220,10 @@ QDRANT_URL=http://localhost:6333
 .\scripts\build-images.ps1
 ```
 
+只构建 `procuremind-agent:latest`，MCP 复用同一镜像，避免重复构建和导出 3GB+ 镜像。
+
+> 日常启动不要再加 `--build`；只有 Dockerfile、依赖或源码变化时才重新构建。
+
 ### 4. 启动完整环境
 
 推荐直接清库、重建主数据/知识库，并导入 12 个月业务演示数据：
