@@ -20,6 +20,7 @@ from pymongo.errors import PyMongoError
 
 from .api.chat import router as chat_router
 from .api.history import router as history_router
+from .api.observability import router as observability_router
 from .web_config import close_mongo_client
 from ..agent.log_utils import web_logger
 from ..agent.backends.sandbox_manager import sandbox_manager
@@ -137,6 +138,7 @@ async def require_internal_token(request: Request, call_next):
 # 注册路由
 app.include_router(chat_router)
 app.include_router(history_router)
+app.include_router(observability_router)
 
 # 文件下载目录（图表等生成文件）
 DOWNLOAD_DIR = Path(__file__).resolve().parents[2] / "data" / "download"

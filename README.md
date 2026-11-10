@@ -125,9 +125,20 @@ requisition_create / requisition_submit / requisition_cancel / requisition_conve
 ### 产物与可观测
 
 - 生成图表、Excel/Word 报告；
-- 工具 trace：`request_id / thread_id / user_id / tool / 耗时 / 状态`；
-- 调用次数、成功率、P50/P95、按工具分布；
+- 每次请求生成 32 位 `trace_id`，记录 Turn 耗时、状态、HITL 中断、工具/模型调用和 token；
+- 工具 trace：`trace_id / request_id / thread_id / user_id / tool / 耗时 / 状态`；
+- 提供 `/api/observability/summary`、`/turns`、`/threads/{id}`、`/errors` 查询接口；
+- 调用次数、成功率、P50/P95、按工具分布、估算成本；
+- 生成 HTML 可观测性看板：
+
+```powershell
+python scripts/observability_report.py --api http://localhost:8000
+```
+
+![可观测性看板](docs/screenshots/07-observability.png)
+
 - 支持联网搜索和网页抓取（外部信息仅作参考）。
+
 
 ## 项目结构
 

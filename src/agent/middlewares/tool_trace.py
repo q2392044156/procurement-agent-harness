@@ -16,6 +16,8 @@ from typing import Any, Awaitable, Callable
 from langchain.agents.middleware import AgentMiddleware, ToolCallRequest
 from langchain_core.messages import ToolMessage
 
+from ..observability import current_trace
+
 ROOT = Path(__file__).resolve().parents[3]
 TRACE_FILE = Path(os.getenv("TOOL_TRACE_FILE", str(ROOT / "logs" / "tool_trace.jsonl")))
 _LOCK = threading.Lock()
@@ -54,6 +56,7 @@ def record_tool_call(
     """记录一次工具调用（MCP 工具包装器与中间件共用）。"""
     record = {
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "trace_id": current_trace().trace_id if current_trace() else None,
         "request_id": str(uuid.uuid4()),
         "thread_id": _thread_id(),
         "user_id": user_id,
@@ -64,6 +67,9 @@ def record_tool_call(
         "duration_ms": round(duration_ms, 1),
         "result_len": result_len,
     }
+    trace = current_trace()
+    if trace is not None:
+        trace.add_tool(tool, status, duration_ms, error)
     try:
         _append(record)
     except Exception:
@@ -106,6 +112,7 @@ class ToolTraceMiddleware(AgentMiddleware):
         finally:
             record = {
                 "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                "trace_id": current_trace().trace_id if current_trace() else None,
                 "request_id": request_id,
                 "thread_id": _thread_id(),
                 "user_id": self.user_id,
@@ -116,6 +123,9 @@ class ToolTraceMiddleware(AgentMiddleware):
                 "duration_ms": round((time.perf_counter() - start) * 1000, 1),
                 "result_len": result_len,
             }
+            trace = current_trace()
+            if trace is not None:
+                trace.add_tool(name, status, record["duration_ms"], error)
             try:
                 _append(record)
             except Exception:

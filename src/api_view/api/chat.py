@@ -20,6 +20,7 @@ from langgraph.types import Command
 from ..agent_loader import agent_loader
 from ...agent.schema import ChatRequest, ResumeRequest
 from ...agent.log_utils import web_logger
+from ...agent.observability import finish_trace, reset_trace, start_trace
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -97,6 +98,8 @@ async def stream_chat_response(
     lease_acquired = sandbox_manager.acquire_lease(user_id)
     sandbox_token = bind_sandbox(user_id)
     runtime_tokens = bind_runtime(user_id, agent_loader.store)
+    trace_context, trace_token = start_trace(thread_id, user_id)
+    trace_status = "ok"
 
     try:
         # 发射“深度思考”事件（前端展示思考动画）
@@ -160,6 +163,8 @@ async def stream_chat_response(
                     # 旧代码只看 interrupts，导致 HITL 被静默吞掉。
                     pending_interrupts = chunk.get("interrupts") or chunk.get("__interrupt__")
                     if pending_interrupts:
+                        trace_context.mark_interrupt()
+                        trace_status = "interrupted"
                         for interrupt_item in pending_interrupts:
                             interrupt_value = (
                                 interrupt_item.value
@@ -376,10 +381,15 @@ async def stream_chat_response(
         yield sse_event("done", {"thread_id": thread_id, "interrupted": False})
 
     except Exception as e:
+        trace_status = "error"
         web_logger.error(f"Stream error for thread {thread_id}: {e}", exc_info=True)
         yield sse_event("error", {"message": f"服务内部错误: {str(e)[:200]}"})
         yield sse_event("done", {"thread_id": thread_id, "interrupted": False})
     finally:
+        try:
+            finish_trace(trace_context, trace_status)
+        finally:
+            reset_trace(trace_token)
         reset_runtime(runtime_tokens)
         reset_sandbox(sandbox_token)
         if lease_acquired:

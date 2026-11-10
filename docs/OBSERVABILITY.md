@@ -1,83 +1,81 @@
-# 评测与可观测（S6）
+# 可观测性
 
-## 1. 工具调用追踪
+Harness 提供两层可观测性：工具/模型调用级 trace，以及一次用户请求的 Turn 级汇总。全部写入本地 JSONL，不依赖外部 APM。
 
-`ToolTraceMiddleware` 与 MCP 工具包装器共用 `record_tool_call`：MCP 工具在
-`load_mcp_tools` 返回前被包装，因此主 Agent、子 Agent、直接调用都会写入
-`logs/tool_trace.jsonl`（可用 `TOOL_TRACE_FILE` 覆盖）。
+## 1. 工具调用 trace
+
+`logs/tool_trace.jsonl`：
 
 | 字段 | 说明 |
 |---|---|
-| `request_id` | 单次调用 ID，便于串联日志 |
+| `trace_id` | 当前 Turn 的 trace ID |
+| `request_id` | 单次工具调用 ID |
 | `thread_id` / `user_id` | 会话与用户 |
-| `tool` / `args_keys` | 工具名与参数键（不记录参数值，避免敏感数据落盘） |
+| `tool` / `args_keys` | 工具名与参数键（不记录参数值） |
 | `status` / `error` | ok / error 与错误摘要 |
 | `duration_ms` / `result_len` | 耗时与结果长度 |
 | `ts` | 时间戳 |
 
-指标命令：
+## 2. Turn 级 trace
 
-```powershell
-conda run -n procurement python -m src.agent.metrics
-```
+`logs/turn_trace.jsonl`，每个 SSE 请求一条：
 
-输出：调用数、成功率、P50/P95/max、按工具分布、最近错误。
-
-P1 增强：
-
-- 追踪文件超过 10MB 自动轮转为 `tool_trace.jsonl.1`；
-- 指标额外输出 `byThread`（按会话聚合）；
-- `ModelUsageMiddleware` 记录每次模型调用的输入/输出 token，指标输出
-  `modelCalls / inputTokens / outputTokens / estimatedCostUsd / byModel`；
-- 单价可用 `MODEL_INPUT_PRICE_PER_M` / `MODEL_OUTPUT_PRICE_PER_M` 覆盖。
-
-## 2. 真机评测
-
-`scripts/eval_live.py` 不经过 LLM，直接通过 MCP 调真实平台，覆盖 10 个只读场景：
-
-| 场景 | 断言 |
+| 字段 | 说明 |
 |---|---|
-| supplier_page / part_page | 返回真实记录 |
-| requisition_page | 申请总数 ≥ 1 |
-| budget_list | 4 个部门预算 |
-| contract_page | 合同 ≥ 2 |
-| inventory_risk | MOUSE-USB-001 净缺口 > 0 |
-| supplier_scorecard | 含 amount 字段 |
-| spend_analysis | 总花费 > 0 |
-| kb_search | 供应商准入问题命中 |
-| inventory_warning | 返回 code=0 |
+| `trace_id` | 32 位十六进制，兼容 OpenTelemetry trace_id 形态 |
+| `thread_id` / `user_id` | 会话与用户 |
+| `status` | `ok` / `error` / `interrupted` |
+| `duration_ms` | 整个 Turn 耗时 |
+| `interrupts` | HITL 中断次数 |
+| `model_calls` / `input_tokens` / `output_tokens` | 模型调用与 token |
+| `tool_calls` / `tool_errors` / `tools` | 工具调用列表与错误 |
 
-结果写入 `evals/live/summary.json`（含每条耗时）。
+`logs/model_usage.jsonl` 记录每次模型调用的 token、模型名、耗时与估算标记。
 
-## 3. 端到端 Agent 单轮
+## 3. HTTP API
 
-`scripts/live_agent_turn.py` 用真实 DeepSeek + MCP + 主 Agent 中间件跑一轮
-“库存预警 + 补货建议”，并把工具调用写入 trace，用于验证：
+需要 `X-Internal-Token`：
 
-- 主 Agent 会委派给分析师子 Agent；
-- 子 Agent 的工具调用同样被追踪；
-- 回复基于真实库存数据（当前 19 / 安全库存 20）。
+| 接口 | 内容 |
+|---|---|
+| `GET /api/observability/summary` | 工具调用、成功率、P50/P95、模型 token/成本、Turn 数/中断数 |
+| `GET /api/observability/turns?limit=50` | 最近的 Turn trace |
+| `GET /api/observability/threads/{thread_id}` | 指定会话的 Turn、工具、模型时间线 |
+| `GET /api/observability/errors?limit=20` | 最近工具错误 |
 
-## 4. 门禁
+示例：
 
 ```powershell
-conda run -n procurement python scripts/verify_phase_s6.py
+$token = (Get-Content .env | Select-String '^AGENT_INTERNAL_TOKEN=').ToString().Split('=',2)[1]
+Invoke-RestMethod http://localhost:8000/api/observability/summary `
+  -Headers @{ 'X-Internal-Token' = $token; 'X-User-Id' = '1' }
 ```
 
-判定：
+## 4. HTML 看板
 
-- 真机 10/10 通过；
-- Agent 单轮有非空回复；
-- trace 至少 1 条，成功率 ≥ 95%，P95 ≤ 20s。
+```powershell
+python scripts/observability_report.py --api http://localhost:8000
+```
 
-## 5. 当前结果
+输出 `logs/observability.html`，包含：
 
-- 真机评测：**10/10**，平均 69ms，最大 152ms（本地 Docker）；
-- Agent 单轮：成功返回库存分析与补货建议；
-- 追踪：主/子 Agent 工具调用入库，指标可复现。
+- 工具调用数、成功率、P95；
+- 模型调用、输入/输出 token、估算成本；
+- Turn 数、中断数、Turn P95；
+- 按工具统计；
+- 最近 Turn 的 trace_id、thread、状态、工具/模型调用和耗时。
 
-## 6. 后续可扩展
+`docs/screenshots/07-observability.png` 是看板截图。
 
-- 将 trace 写入 Mongo/OTel，接入 Grafana；
-- 评测集扩充到 50 条业务场景（当前 10 条真机 + 既有 LLM 评测）；
-- 增加成本统计（token 用量按模型单价折算）。
+## 5. 已验证
+
+- 普通 chat：生成 Turn trace，工具调用与模型调用归集正确；
+- HITL：Turn 状态为 `interrupted`，中断次数为 1；
+- `GET /api/observability/summary`、`/turns`、`/threads/{id}` 返回一致；
+- HTML 看板可离线打开。
+
+## 6. 限制
+
+- JSONL 本地文件适合演示和单实例；多实例/生产应接入 OpenTelemetry Collector、Langfuse 或 ClickHouse；
+- 没有在线告警、采样和长期存储；
+- token 为估算值，流式 DeepSeek 不返回 usage 时会标记 `estimated=true`。

@@ -10,6 +10,8 @@ from pathlib import Path
 
 from langchain.agents.middleware import AgentMiddleware
 
+from ..observability import current_trace
+
 ROOT = Path(__file__).resolve().parents[3]
 USAGE_FILE = Path(os.getenv("MODEL_USAGE_FILE", str(ROOT / "logs" / "model_usage.jsonl")))
 
@@ -66,6 +68,7 @@ class ModelUsageMiddleware(AgentMiddleware):
             estimated = True
         record = {
             "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            "trace_id": current_trace().trace_id if current_trace() else None,
             "thread_id": _thread_id(),
             "user_id": self.user_id,
             "model": metadata.get("model_name") or metadata.get("model") or "deepseek",
@@ -74,6 +77,10 @@ class ModelUsageMiddleware(AgentMiddleware):
             "estimated": estimated,
             "duration_ms": round((time.perf_counter() - started) * 1000, 1),
         }
+        trace = current_trace()
+        if trace is not None:
+            trace.add_model(record["model"], record["input_tokens"], record["output_tokens"],
+                            record["duration_ms"], estimated)
         try:
             USAGE_FILE.parent.mkdir(parents=True, exist_ok=True)
             with USAGE_FILE.open("a", encoding="utf-8") as handle:

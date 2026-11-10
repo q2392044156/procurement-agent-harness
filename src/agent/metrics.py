@@ -6,6 +6,8 @@ import os
 import sys
 from pathlib import Path
 
+from .observability import read_turns
+
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TRACE = ROOT / "logs" / "tool_trace.jsonl"
 USAGE_FILE = ROOT / "logs" / "model_usage.jsonl"
@@ -59,6 +61,9 @@ def summarize(path: Path | None = None) -> dict:
 
     durations = [float(r["duration_ms"]) for r in records if r.get("duration_ms") is not None]
     errors = [r for r in records if r.get("status") == "error"]
+    turns = read_turns(500)
+    turn_durations = [float(r.get("duration_ms") or 0) for r in turns]
+    interrupted = sum(1 for r in turns if r.get("status") == "interrupted")
     by_tool: dict[str, dict] = {}
     by_thread: dict[str, dict] = {}
     for record in records:
@@ -83,6 +88,10 @@ def summarize(path: Path | None = None) -> dict:
         "maxMs": round(max(durations), 1) if durations else 0.0,
         "byTool": dict(sorted(by_tool.items())),
         "byThread": dict(sorted(by_thread.items())),
+        "turns": len(turns),
+        "interruptedTurns": interrupted,
+        "avgTurnMs": round(sum(turn_durations) / len(turn_durations), 1) if turn_durations else 0.0,
+        "p95TurnMs": round(_percentile(turn_durations, 0.95), 1),
         "lastError": errors[-1].get("error") if errors else None,
         **_usage(),
     }
