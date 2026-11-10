@@ -14,7 +14,7 @@
 
 ## 2. 已落地的防护
 
-- **HITL**：7 个写工具全部中断，人工 `approve/reject` 后才执行；
+- **HITL**：9 个写工具（订单创建/修改/提交/关闭/取消、申请创建/提交/取消/转单）全部中断，主 Agent 与子 Agent 均继承同一清单，人工 `approve/reject` 后才执行；
 - **幂等**：平台按操作 + 用户 + 内容去重，Agent 重试不重复建单；
 - **限流**：`/api/chat/**` 默认每用户 30 次/分钟（`AGENT_RATE_LIMIT_PER_MINUTE`）；
 - **PII 脱敏**：记忆写入前对手机号、邮箱、API Key 做 `[REDACTED]`；

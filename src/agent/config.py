@@ -101,6 +101,8 @@ SUMMARIZATION_THRESHOLD = 0.85  # 85% 上下文窗口时触发摘要
 _WRITE_TOOLS = (
     "order_create",
     "order_update",
+    "order_submit",
+    "order_close",
     "order_cancel",
     "requisition_create",
     "requisition_submit",

@@ -11,6 +11,7 @@ from pathlib import Path  # 导入路径库，用于处理文件路径
 from deepagents import SubAgent  # 导入子Agent类型（用于类型注解）
 from langchain_core.tools import BaseTool  # 导入工具基类，用于类型注解
 from ..log_utils import agent_logger  # 导入日志工具
+from ..config import INTERRUPT_ON_TOOLS  # 子 Agent 默认继承主 Agent 的写操作 HITL
 
 # 配置文件目录：当前文件所在目录下的 configs 文件夹
 CONFIGS_DIR = Path(__file__).parent / "configs"
@@ -237,8 +238,11 @@ def resolve_subagent_tools(configs: list[dict], all_tools: list[BaseTool]) -> li
                 if tool not in matched_tools:
                     matched_tools.append(tool)
         
-        # 解析 interrupt_on 配置
-        interrupt_on = _parse_interrupt_on(config)
+        # 继承主 Agent 的写操作清单；YAML 显式配置可覆盖单个工具的策略
+        interrupt_on = dict(INTERRUPT_ON_TOOLS)
+        explicit_interrupts = _parse_interrupt_on(config)
+        if explicit_interrupts:
+            interrupt_on.update(explicit_interrupts)
 
         # 校验 output_format 契约结构（非法则记录错误，仍继续创建但契约不注入）
         output_contract = ""
