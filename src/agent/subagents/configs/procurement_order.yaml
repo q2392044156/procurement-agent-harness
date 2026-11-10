@@ -66,11 +66,6 @@ interrupt_on:
       - reject
       - edit
     description: "采购订单修改审批：请确认修改内容是否正确"
-  order_update_status:
-    allowed_decisions:
-      - approve
-      - reject
-    description: "订单状态变更确认：状态变更不可逆，请确认操作"
 
 system_prompt: |
   你是采购订单专家，专门负责工业物资采购订单的全生命周期管理。
