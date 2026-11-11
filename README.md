@@ -168,7 +168,9 @@ procurement-agent-harness/
 │   ├── ARCHITECTURE.md
 │   ├── RAG.md
 │   ├── SKILLS.md
-│   └── SECURITY.md
+│   ├── SECURITY.md
+│   └── SECURITY_EVAL.md
+├── evals/security/                # 安全评测结果
 ├── Dockerfile
 ├── requirements.txt
 ├── .env.example
@@ -350,6 +352,14 @@ Agent 通过平台登录态识别用户，使用平台的演示账号：
 - 联网搜索结果是外部低信任数据，不覆盖平台权限、审批和制度约束。
 - 演示密码、`DEEPSEEK_API_KEY`、`AGENT_INTERNAL_TOKEN` 仅用于本地；部署前必须更换。
 - 不要将 `8000`、`8001`、`27017`、`6333` 直接暴露到公网。
+
+### 安全评测
+
+```powershell
+conda run -n procurement python scripts/security_eval.py
+```
+
+覆盖 10 类攻击面：内部 API 鉴权、角色提升、IDOR、批量删除/清库存、Prompt 注入写单、系统提示词/密钥提取、知识库 ACL、知识库间接注入、SQL 注入、HITL 拒绝不落库。当前 **10/10 PASS**，详见 [docs/SECURITY_EVAL.md](docs/SECURITY_EVAL.md)。
 
 ### 明确不支持
 
