@@ -32,7 +32,7 @@ jobs:
       - name: Install pytest
         run: pip install pytest
       - name: Compile Python sources
-        run: python -m compileall -q src tests
+        run: python -m compileall -q src tests scripts evals
       - name: Memory layer tests
         run: python -m tests.memory.test_memory_layer
       - name: Progressive skills tests
