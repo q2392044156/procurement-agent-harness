@@ -9,7 +9,7 @@ from pathlib import Path
 import httpx
 from dotenv import load_dotenv
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT / ".env", override=True)
 TOKEN = os.getenv("AGENT_INTERNAL_TOKEN", "")
 BASE = "http://localhost:8000"
