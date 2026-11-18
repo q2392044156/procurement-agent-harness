@@ -308,7 +308,6 @@ def create_main_agent(
     # ===== 5. 组装中间件栈 =====
     # 自定义中间件
     from .middlewares.sandbox_health import SandboxHealthMiddleware
-    from .middlewares.context_injection import ContextInjectionMiddleware
     from .middlewares.skills_sync import SkillsSyncMiddleware
     from .middlewares.user_skills_restore import UserSkillsRestoreMiddleware
     from .middlewares.tools_summarization import ToolsSummarizationMiddleware
@@ -354,7 +353,7 @@ def create_main_agent(
         user_skills_restore_middleware.restore_now()
 
     middlewares = [
-        # --- 自定义中间件（执行顺序 1→7）---
+        # --- 自定义中间件（执行顺序 1→11）---
         SandboxHealthMiddleware(
             sandbox_manager=sandbox_manager_instance,
             user_id=user_context.user_id,
@@ -363,16 +362,15 @@ def create_main_agent(
             check_interval=SANDBOX_HEALTH_CHECK_INTERVAL_SECONDS,
         ),                                                            # 1. 沙箱健康检查 + 重建
         HarnessPhaseMiddleware(router_model=router_llm),               # 2. 混合路由 + rubric 注入
-        ContextInjectionMiddleware(user_context=user_context),        # 3. 用户上下文注入
-        ModelUsageMiddleware(user_id=user_context.user_id),           # 3.5 模型用量统计
-        WarmMemoryMiddleware(store=store, user_id=user_context.user_id),
-        ProgressiveSkillsMiddleware(skill_catalog),
-        skills_sync_middleware,                                       # 4. 基础 Skills 同步
-        user_skills_restore_middleware,                               # 5. 用户 Skills 恢复
-        ToolsSummarizationMiddleware(),                               # 6. 摘要监控
-        MemoryUpdateMiddleware(store=store, user_id=user_context.user_id),      # 7. 偏好提取（WARM）
-        MemoryConsolidationMiddleware(store=store, user_id=user_context.user_id),   # 7.5 情节归档 + 遗忘（COLD）
-        SandboxCircuitBreakerMiddleware(failure_threshold=3, recovery_timeout=60),  # 8. 熔断器
+        ModelUsageMiddleware(user_id=user_context.user_id),           # 3. 模型用量统计
+        WarmMemoryMiddleware(store=store, user_id=user_context.user_id),   # 4. 预热记忆（WARM brief）
+        ProgressiveSkillsMiddleware(skill_catalog),                   # 5. 技能目录（渐进披露）
+        skills_sync_middleware,                                       # 6. 基础 Skills 同步
+        user_skills_restore_middleware,                               # 7. 用户 Skills 恢复
+        ToolsSummarizationMiddleware(),                               # 8. 工具摘要监控
+        MemoryUpdateMiddleware(store=store, user_id=user_context.user_id),      # 9. 偏好提取（WARM）
+        MemoryConsolidationMiddleware(store=store, user_id=user_context.user_id),   # 10. 情节归档 + 遗忘（COLD）
+        SandboxCircuitBreakerMiddleware(failure_threshold=3, recovery_timeout=60),  # 11. 熔断器
         # --- Harness 评审器（RubricMiddleware）---
         # 收到 rubric 后，grader 子Agent 结构化产出 satisfied/needs_revision/failed，
         # needs_revision 时自动打回模型重做，形成真实 Review 回路（非 prompt 软约束）
