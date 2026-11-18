@@ -151,14 +151,15 @@ def create_main_agent(
     )
 
     # ===== 3. 加载工具 =====
-    from src.agent.tools.mcp_client import load_mcp_tools_sync
-    from src.agent.tools.chart_generator import generate_chart
+    from src.agent.tools.mcp_loader import load_mcp_tools_sync
+    from src.agent.tools.charts import generate_chart
     from src.agent.tools.web_search import web_search
-    from src.agent.tools.web_fetch import web_fetch, install_skill
-    from src.agent.tools.skill_management import list_user_skills
-    from src.agent.tools.hitl_tools import request_order_info
-    from src.agent.tools.download_sandbox_file import download_sandbox_file, list_sandbox_files
-    from src.agent.tools.document_generator import generate_document, generate_table_report
+    from src.agent.tools.web_fetch import web_fetch
+    from src.agent.skills.installer import install_skill
+    from src.agent.skills.tools import list_user_skills
+    from src.agent.tools.hitl import request_order_info
+    from src.agent.tools.sandbox_files import download_sandbox_file, list_sandbox_files
+    from src.agent.tools.documents import generate_document, generate_table_report
 
     mcp_tools = load_mcp_tools_sync(user_context.user_id)
     custom_tools = [generate_chart, web_search, web_fetch, install_skill, list_user_skills, request_order_info,
@@ -167,7 +168,7 @@ def create_main_agent(
 
     # 三层记忆：COLD 层按需检索 + 显式写入（WARM 层已在系统提示词里常驻注入）
     if DEFAULT_MEMORY_CONFIG.memory_tools_enabled:
-        from src.agent.tools.memory_tools import read_memory, remember
+        from src.agent.tools.memory import read_memory, remember
         custom_tools.extend([read_memory, remember])
     all_tools = mcp_tools + custom_tools
 
