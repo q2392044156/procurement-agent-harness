@@ -367,11 +367,67 @@ markers = ["live: 需要真实 LLM / 平台 / Docker"]
 
 **验收**：`compileall` + `pytest -q` 全绿；`python -m src.server.main` 能起；`python -m src.mcp_server.server_main` 能起；`scripts/smoke/sse_smoke.py` 通过；一次真实对话（含一次写操作中断 + resume）。
 
+**P4 执行记录（已完成，6 个提交）**
+
+顺序上先加了一步「相对导入 → 绝对导入」（计划里没有，但必要）：后续要移动几十个文件，
+`from ...agent.x import y` 的层级数随目录深度变化，移动后不报错、只在 import 时才炸；
+改成 `from src.agent.x import y` 之后，移动退化成字符串替换，断链可静态检查。
+
+一次性 codemod（跑完删除）：
+
+- `scripts/dev/absolutize_imports.py`：ast 改写 `src/`+`tests/` 下相对导入为绝对导入，
+  保留原行缩进与行内注释 → 62 文件 / 172 条，剩余 0。
+- `scripts/dev/move_modules.py <plan.json>`：按映射表 `git mv`，再用「最长旧名优先」正则
+  重写全仓 `*.py` 的模块引用。
+
+| 提交 | 内容 |
+|---|---|
+| `ef4002b` | 相对导入统一改绝对导入（172 条 / 62 文件） |
+| `8b8127c` | P4a 抽出 `src/core`（settings / env / logging / contracts / paths） |
+| `a156444` | P4b `api_view` → `server`，两个入口去掉 `sys.path` 胶水 |
+| `236b8e3` | P4c `backends` → `sandbox`、`infra` → `infrastructure`、observability 独立 |
+| `08bcf7c` | P4d `agent` 内部分 review / skills / memory 子域，拆 `factory` 与 `bootstrap` |
+| `2bf08c1` | P4e 工具按职责命名，技能安装独立成 `skills/installer.py` |
+| `af3b9b9` | P4f 脚本按用途分目录，去掉全部 `sys.path` 胶水 |
+
+与计划的三处偏差（都是发现后才改的）：
+
+1. **`from src.<pkg> import <module>` 抓不到**：`agent/memory/config.py:100` 的
+   `from src.agent import env_utils as _env_utils` 靠正则改不到，改成
+   `from src.core import env as _env_utils`。每阶段都用 grep 复查这个形态。
+2. **`ROOT = Path(__file__).resolve().parents[1]` 是个隐藏炸弹**：脚本下沉一层后
+   `parents[1]` 从仓库根变成 `scripts/`，且不会报错。22 个脚本统一改为
+   `from src.core.paths import PROJECT_ROOT as ROOT`，调用方式统一为
+   `python -m scripts.verify.s3`（`scripts/verify/s6.py` 内部子进程同步改成 `-m`）。
+3. **`main_agent.py` 拆成两个文件后没有保留壳**：`factory.py`（组装）+
+   `bootstrap.py`（沙箱填充 + `_load_skills_prompt`），4 个调用点（`server/sessions.py`、
+   `scripts/dev/live_agent_turn.py`、`evals/business/run.py`、`tests/integration/test_agent_smoke.py`）
+   直接改 import，不留 `main_agent.py` 转发，避免「新老两份入口」长期共存。
+
+另外修掉两个既有问题：
+
+- `create_main_agent` 里的 `MEMORY_DIR` 常量从未被使用，随拆分删除；
+- `docs/ARCHITECTURE.md` 的「已知例外：`kb/reranker.py` 反向依赖 `agent.config`」已不成立
+  ——`get_llm` 现在在 `core/settings.py`，`kb` 不再 import 任何业务层。
+
+**门禁结果（每阶段都跑）**：`compileall -q src tests scripts evals` exit 0；
+79 个 `src` 模块 + 22 个脚本模块 `importlib` 冒烟全通；「所有 `src.*` 导入都能落到真实文件」
+静态检查 0 处不可达；`tests/{skills,review,sandbox,memory,observability}` **102 passed**；
+`tests/memory/test_memory_layer.py` 直跑 34/34；`tests/kb/test_grounding.py` PASS(3 asserts)；
+`src.server.main` 装配出 10 条路由。
+
+**未验证（本机环境限制）**：`docker build`（本机 docker 无镜像）、真起
+`src.mcp_server.server_main` 与本机缺 `fitz` 导致的 `tests/integration/*`；
+`scripts/smoke/sse_smoke.py` 需要平台 + MCP 同时在跑，同样留到有环境时验收。
+
 ### P5 内核抽取与反向依赖修复（可选，2 h）
 
-1. `config.py` 拆成 `core/settings.py`（常量）+ `core/llm.py`（`get_llm`）。
-2. `kb/reranker.py:40` 的 `from src.agent.config import get_llm` → `from src.core.llm import get_llm`，ARCHITECTURE.md 的「已知例外」消失。
-3. `schema.py` 拆 `core/contracts.py`（对外的 Pydantic 模型）与 `agent/review/state.py`（`AgentState/Phase/Plan/ReviewResult`）。
+**状态：第 2 项已在 P4a 顺带完成**（`get_llm` 在 `core/settings.py`，`kb` 不再 import
+`agent`；`schema.py` → `core/contracts.py` 也已落地）。剩余两项尚未做，按需再决定：
+
+1. `core/settings.py` 仍同时放「环境变量读取」与「LLM 工厂」，可拆成 `core/settings.py` + `core/llm.py`。
+2. `core/contracts.py` 里的 `AgentState/Phase/Plan/ReviewResult` 可下沉到 `agent/review/state.py`，
+   让 `core` 只留对外契约。
 
 **验收**：`python -c "import src.kb.reranker"` 不再间接加载 agent 包；pytest 全绿。
 
