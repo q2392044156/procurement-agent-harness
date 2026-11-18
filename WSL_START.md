@@ -6,7 +6,7 @@
 
 可测试“你好”“什么是库存，请查询缺货零件”“沿用刚才的方案，把第二家的量翻倍”。检查日志 Review route 与 Harness trace 中的 review_decision。订单写入仍须审批；写工具或子任务委派后评审未通过，不自动重放整轮任务。
 
-离线回归：`.venv/bin/python -m unittest src.test.test_hybrid_review -v`。
+离线回归：`.venv/bin/python -m pytest tests/review/test_review_chain.py -q`。
 本次修改前代码标签为 `review-before-hybrid-20260917`，可用独立 git worktree 对照；不要使用硬重置覆盖本地改动。
 
 ## 本次修复
@@ -66,8 +66,8 @@ cd ~/projects/smart-procurement-platform
 
 ```bash
 cd ~/projects/procurement-agent-harness
-.venv/bin/python -m src.test.test_memory_layer
-.venv/bin/python -m unittest src.test.test_memory_integration -v
+.venv/bin/python -m tests.memory.test_memory_layer
+.venv/bin/python -m pytest tests/memory/test_memory_integration.py -q
 ```
 
 网页使用同一用户：在会话 A 说“以后用柱状图”，新建会话 B 请求展示数据，确认偏好生效。

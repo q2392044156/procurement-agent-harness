@@ -16,6 +16,7 @@ from langchain.agents.middleware import (
     HumanInTheLoopMiddleware,
 )
 
+from ..core.paths import PROJECT_ROOT, PROMPTS_DIR, SKILLS_DIR
 from .config import (
     get_llm,
     INTERRUPT_ON_TOOLS, skills_store_namespace,
@@ -28,11 +29,8 @@ from .memory.config import DEFAULT_MEMORY_CONFIG
 from .memory.keeper import MemoryKeeper
 from .prompts.main import MAIN_SYSTEM_PROMPT, MEMORY_USAGE_PROMPT
 
-# 项目路径
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-SKILLS_DIR = PROJECT_ROOT / "src" / "skills"
+# 项目内其它目录
 MEMORY_DIR = Path(__file__).parent / "memory"
-PROMPTS_DIR = Path(__file__).parent / "prompts"
 
 
 def _upload_project_to_sandbox(sandbox) -> bool:
@@ -126,7 +124,7 @@ def bootstrap_sandbox(sandbox) -> None:
 
     skills_copy = sandbox.execute(
         "mkdir -p /skills && "
-        "cp -r /workspace/src/src/skills/. /skills/ 2>/dev/null || true"
+        "cp -r /workspace/src/skills/. /skills/ 2>/dev/null || true"
     )
     if skills_copy.exit_code != 0:
         raise RuntimeError(f"core Skills bootstrap failed: {skills_copy.output}")
