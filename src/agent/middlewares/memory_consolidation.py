@@ -14,7 +14,7 @@ from typing import Any
 
 from langchain.agents.middleware import AgentMiddleware, Runtime
 
-from src.agent.log_utils import middleware_logger
+from src.core.logging import middleware_logger
 from src.agent.memory.config import DEFAULT_MEMORY_CONFIG, MemoryConfig
 from src.agent.memory.keeper import MemoryKeeper
 from src.agent.memory.run_config import current_thread_id

@@ -8,7 +8,7 @@ from typing import Optional
 from langchain_core.tools import tool
 from langgraph.types import interrupt
 
-from src.agent.log_utils import agent_logger
+from src.core.logging import agent_logger
 
 # 订单必填字段
 # 定义订单必填字段列表

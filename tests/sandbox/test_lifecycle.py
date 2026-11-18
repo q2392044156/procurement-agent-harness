@@ -23,7 +23,7 @@ from src.agent.backends.sandbox_holder import (
     set_sandbox,
 )
 from src.agent.backends.sandbox_proxy import SandboxBackendProxy
-from src.agent.config import skills_store_namespace
+from src.core.settings import skills_store_namespace
 from src.agent.middlewares.sandbox_health import SandboxHealthMiddleware
 from src.agent.middlewares.skills_sync import SkillsSyncMiddleware
 from src.agent.middlewares.user_skills_restore import UserSkillsRestoreMiddleware

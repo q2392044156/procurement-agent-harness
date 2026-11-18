@@ -18,8 +18,8 @@ from fastapi.responses import StreamingResponse
 from langgraph.types import Command
 
 from src.api_view.agent_loader import agent_loader
-from src.agent.schema import ChatRequest, ResumeRequest
-from src.agent.log_utils import web_logger
+from src.core.contracts import ChatRequest, ResumeRequest
+from src.core.logging import web_logger
 from src.agent.observability import finish_trace, reset_trace, start_trace
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])

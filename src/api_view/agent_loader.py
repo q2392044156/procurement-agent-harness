@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from typing import Any, Optional
 from datetime import datetime
 
-from src.agent.log_utils import web_logger
-from src.agent.schema import ProcurementContext
+from src.core.logging import web_logger
+from src.core.contracts import ProcurementContext
 from src.api_view.web_config import get_db
 
 

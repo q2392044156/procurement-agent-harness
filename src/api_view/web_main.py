@@ -22,9 +22,9 @@ from src.api_view.api.chat import router as chat_router
 from src.api_view.api.history import router as history_router
 from src.api_view.api.observability import router as observability_router
 from src.api_view.web_config import close_mongo_client
-from src.agent.log_utils import web_logger
+from src.core.logging import web_logger
 from src.agent.backends.sandbox_manager import sandbox_manager
-from src.agent.config import SANDBOX_MAINTENANCE_INTERVAL_SECONDS
+from src.core.settings import SANDBOX_MAINTENANCE_INTERVAL_SECONDS
 
 
 async def _sandbox_maintenance(stop_event: asyncio.Event) -> None:

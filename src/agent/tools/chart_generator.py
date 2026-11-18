@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from langchain_core.tools import tool
 
-from src.agent.log_utils import agent_logger
+from src.core.logging import agent_logger
 from src.agent.backends.sandbox_holder import get_sandbox
 
 CHART_TYPES = [

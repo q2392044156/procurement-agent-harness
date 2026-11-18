@@ -10,7 +10,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from src.agent.log_utils import agent_logger
+from src.core.logging import agent_logger
 
 
 class ReviewRoute(BaseModel):

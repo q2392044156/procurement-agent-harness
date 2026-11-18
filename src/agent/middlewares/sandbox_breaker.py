@@ -8,7 +8,7 @@ from typing import Any, Callable, Awaitable
 from langchain_core.messages import ToolMessage
 from langgraph.types import Command
 from langchain.agents.middleware import AgentMiddleware, Runtime, ToolCallRequest
-from src.agent.log_utils import middleware_logger
+from src.core.logging import middleware_logger
 
 
 class SandboxCircuitBreakerMiddleware(AgentMiddleware):

@@ -3,8 +3,8 @@
 import httpx
 from langchain_core.tools import tool
 
-from src.agent.log_utils import agent_logger
-from src.agent.env_utils import get_env
+from src.core.logging import agent_logger
+from src.core.env import get_env
 
 
 @tool

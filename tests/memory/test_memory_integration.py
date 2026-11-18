@@ -106,13 +106,13 @@ class MemoryIntegrationTests(unittest.TestCase):
         from langgraph.runtime import Runtime
         store = FakeStore()
         middleware = MemoryUpdateMiddleware(store, 'u1', MemoryConfig(llm_extraction_enabled=True))
-        with patch('src.agent.config.get_llm', return_value=object()), patch(
+        with patch('src.core.settings.get_llm', return_value=object()), patch(
             'src.agent.memory.extractor.llm_extract_preferences', return_value={'preferred_language': 'en'}
         ) as extract:
             middleware.after_agent({'messages': [Msg('human', 'Remember my language')]}, Runtime())
             extract.assert_called_once()
         self.assertEqual(MemoryKeeper(store, 'u1').load_preferences()['preferred_language'], 'en')
-        with patch('src.agent.config.get_llm', side_effect=RuntimeError('offline')):
+        with patch('src.core.settings.get_llm', side_effect=RuntimeError('offline')):
             middleware.after_agent({'messages': [Msg('human', '以后用饼图')]}, Runtime())
         self.assertEqual(MemoryKeeper(store, 'u1').load_preferences()['preferred_chart_type'], 'pie')
 

@@ -4,7 +4,7 @@ Motor AsyncIOMotorClient 连接.
 """
 import os
 from motor.motor_asyncio import AsyncIOMotorClient
-from src.agent.env_utils import get_env
+from src.core.env import get_env
 
 MONGODB_URI = get_env("MONGODB_URI", "mongodb://localhost:27017")
 MONGODB_DB_NAME = get_env("MONGODB_DB_NAME", "erp_agent")

@@ -22,8 +22,8 @@ import yaml
 from pathlib import PurePosixPath
 from langchain_core.tools import tool
 
-from src.agent.config import skills_store_namespace
-from src.agent.log_utils import agent_logger
+from src.core.settings import skills_store_namespace
+from src.core.logging import agent_logger
 from src.agent.runtime_context import get_current_store, get_current_user_id
 
 
