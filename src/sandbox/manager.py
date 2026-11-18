@@ -28,7 +28,10 @@ from datetime import datetime, timedelta
 
 from src.sandbox.opensandbox import CustomOpenSandbox
 from src.sandbox.setup import SandboxConfig, create_secure_sandbox
-from src.core.settings import SANDBOX_IDLE_TIMEOUT_MINUTES, SANDBOX_WARM_POOL_SIZE
+from src.core.settings import SANDBOX_IDLE_TIMEOUT_MINUTES, SANDBOX_IMAGE, SANDBOX_WARM_POOL_SIZE
+
+# 沙箱容器统一前缀（预热池与按需创建都用它，便于批量清理）
+_CONTAINER_PREFIX = "erp-sandbox"
 from src.core.logging import sandbox_logger
 
 
@@ -471,6 +474,54 @@ class SandboxManager:
             self._entries.clear()
             self._user_map.clear()
         sandbox_logger.info("All sandboxes destroyed")
+
+    def prune_stale_containers(self) -> int:
+        """清掉与当前配置不一致的旧沙箱容器。
+
+        Agent 重启后会把 user → container 映射从 MongoDB 恢复（刻意保留用户
+        /workspace 里的产物）。但沙箱的挂载布局或镜像一旦升级，恢复回来的旧容器
+        仍然是老配置：例如没有 ``/workspace/python-packages`` 这个可执行挂载点时，
+        旧容器里半装好的 numpy 会让每次图表生成都报
+        "failed to map segment from shared object"。
+
+        这里只删“配置明显过期”的容器，配置一致的照样保留。
+        """
+        expected_mounts = {"/tmp", "/workspace", "/workspace/python-packages", "/skills"}
+        try:
+            import docker
+            client = docker.from_env()
+        except Exception as e:
+            sandbox_logger.warning(f"Stale prune skipped (docker unavailable): {e}")
+            return 0
+
+        removed = 0
+        try:
+            for container in client.containers.list(filters={"name": _CONTAINER_PREFIX}):
+                if container.name in self._entries:
+                    continue
+                tmpfs = set(((container.attrs.get("HostConfig") or {}).get("Tmpfs") or {}).keys())
+                tags = set((container.image.tags if container.image else []) or [])
+                reasons = []
+                if expected_mounts - tmpfs:
+                    reasons.append(f"missing mounts={sorted(expected_mounts - tmpfs)}")
+                if SANDBOX_IMAGE not in tags:
+                    reasons.append(f"image={sorted(tags) or 'untagged'}")
+                if not reasons:
+                    continue
+                try:
+                    container.stop(timeout=3)
+                    container.remove(force=True)
+                    removed += 1
+                    sandbox_logger.info(
+                        f"Pruned stale sandbox container {container.name} "
+                        f"({'; '.join(reasons)})"
+                    )
+                except Exception as e:
+                    sandbox_logger.warning(f"Failed to prune {container.name}: {e}")
+        finally:
+            client.close()
+
+        return removed
 
     # ============================================================
     # 超时回收

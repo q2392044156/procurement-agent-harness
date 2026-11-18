@@ -14,7 +14,7 @@ MCP_SERVER_URL = get_env("MCP_SERVER_URL", "http://localhost:9000")
 MCP_SSE_URL = f"{MCP_SERVER_URL}/sse"
 
 # ============ 沙箱配置 ============
-SANDBOX_IMAGE = get_env("SANDBOX_IMAGE", "python:3.11-slim")  # Docker 镜像名称，具体是 Python 3.11 的 slim（精简）版本
+SANDBOX_IMAGE = get_env("SANDBOX_IMAGE", "procuremind-sandbox:latest")  # 沙箱运行时镜像（预装 matplotlib/numpy/pandas + 中文字体）；未构建时自动退回 python:3.11-slim
 SANDBOX_WORK_DIR = "/workspace"
 SANDBOX_SKILLS_DIR = "/skills"
 SANDBOX_MEMORIES_DIR = "/memories"

@@ -197,6 +197,21 @@ class HybridReviewTests(unittest.TestCase):
         state["messages"].append(ToolMessage(content="Error: offline", tool_call_id="err"))
         self.assertNotIn("rubric", ReviewExecutionGate(self.config).after_agent(state, None))
 
+    def test_chat_model_router_parses_plain_json(self):
+        import json as _json
+        payload = _json.dumps({"decision": "review", "task_type": "analysis",
+                               "reason": "needs independent review", "checks": ["sources"]})
+        model = FakeMessagesListChatModel(responses=[AIMessage(content=payload)])
+        update = ReviewPolicy(self.config, model).start(self.state("compare the two quotes again"))
+        self.assertEqual(update["review_decision"]["source"], "model")
+        self.assertEqual(update["review_decision"]["task_type"], "analysis")
+        self.assertIn("sources", update["review_decision"]["checks"])
+        broken = FakeMessagesListChatModel(responses=[AIMessage(content="not json")])
+        self.assertEqual(
+            ReviewPolicy(self.config, broken).start(self.state("compare the two quotes again"))["review_decision"]["source"],
+            "fallback",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

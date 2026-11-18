@@ -38,12 +38,16 @@ import json
 import sys
 import os
 
-for font in ['SimHei', 'Microsoft YaHei', 'WenQuanYi Micro Hei', 'DejaVu Sans']:
-    try:
+from matplotlib import font_manager as _font_manager
+_available_fonts = {f.name for f in _font_manager.fontManager.ttflist}
+# 按优先级挑一个真实存在的中文字体（沙箱镜像预装 Noto Sans CJK SC）
+for font in [
+    'SimHei', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Noto Sans CJK JP',
+    'Source Han Sans SC', 'WenQuanYi Micro Hei', 'DejaVu Sans',
+]:
+    if font in _available_fonts:
         plt.rcParams['font.sans-serif'] = [font]
         break
-    except:
-        continue
 plt.rcParams['axes.unicode_minus'] = False
 
 params_path = sys.argv[1]

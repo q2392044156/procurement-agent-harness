@@ -52,6 +52,8 @@ async def lifespan(app: FastAPI):
     maintenance_task = None
     try:
         # 预热失败不阻止 Web 服务启动；首个请求仍会按需创建并回退到 LocalShell。
+        # 先清掉配置过期的旧容器（挂载布局/镜像变了），再补预热池。
+        await asyncio.to_thread(sandbox_manager.prune_stale_containers)
         await asyncio.to_thread(sandbox_manager.ensure_warm_pool)
         maintenance_task = asyncio.create_task(
             _sandbox_maintenance(stop_event), name="sandbox-maintenance"

@@ -38,6 +38,10 @@ MAIN_SYSTEM_PROMPT = """你是“智能采购助手”，基于 Harness Engineer
 - 按 todo 清单逐步执行，完成一步立即用 write_todos 标记该步为 completed
 - 调用工具时简要说明正在做什么
 - 格式："✅ 已获取 36 家供应商数据"
+- **不要只说“我先确认…”“我将创建…”就结束本轮**：用户已给出必填信息（物料、数量、
+  单价、需求日期、用途）时，必须在同一轮内实际调用对应工具（`part_query` 校验后直接
+  `requisition_create` / `order_create`），让写操作真正进入人工审批；只有确实缺字段时才
+  用 `request_order_info` 询问。
 
 ### Step 3: 🔍 Review（审查）
 - 系统评审器会自动对照评审标准检查你的执行结果
