@@ -1,11 +1,11 @@
 # 安全评测
 
-`scripts/security_eval.py` 是一组可重复的安全验收，覆盖 API 边界、Prompt 注入、越权、工具滥用、知识库泄漏和 HITL。
+`python -m evals.security.run` 是一组可重复的安全验收，覆盖 API 边界、Prompt 注入、越权、工具滥用、知识库泄漏和 HITL。
 
 ## 运行
 
 ```powershell
-conda run -n procurement python scripts/security_eval.py
+conda run -n procurement python -m evals.security.run
 ```
 
 结果写入 `evals/security/results.json`，并打印每个用例的 PASS/FAIL。

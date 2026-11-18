@@ -30,7 +30,7 @@
 ## 实现与兼容
 
 - `src/agent/progressive_skills.py`：目录发现、frontmatter 解析、读取工具、中间件及子 Agent 接入。
-- `src/agent/main_agent.py`：替换全量正文注入，注册三个工具；`skills=None` 避免与框架内置加载器重复运行。
+- `src/agent/factory.py`：替换全量正文注入，注册三个工具；`skills=None` 避免与框架内置加载器重复运行。
 - 基础技能读取项目 `skills/`（仓库根目录），用户技能读取 Store 的 `("persisted-skills", user_id)` 命名空间。工具参数不能指定其他用户。
 - 目录每次模型调用前重新发现，同一缓存 Session 也能看到持久化技能的安装、修改和删除。异步模型调用中的同步发现在线程中执行。
 - 只有 frontmatter 的名称与描述进入目录，不会从正文截取摘要。独立 Markdown 只有显式 description 且同目录没有 SKILL.md 时才视作旧格式技能。

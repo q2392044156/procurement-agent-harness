@@ -10,7 +10,8 @@ from pathlib import Path
 
 import httpx
 
-ROOT = Path(__file__).resolve().parents[1]
+from src.core.paths import PROJECT_ROOT as ROOT
+
 PLATFORM = os.getenv("ERP_BASE_URL", "http://localhost:8080")
 CORPUS = ROOT / "samples" / "kb_corpus_industrial"
 DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"

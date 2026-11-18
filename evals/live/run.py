@@ -11,7 +11,8 @@ from pathlib import Path
 
 import httpx
 
-ROOT = Path(__file__).resolve().parents[1]
+from src.core.paths import PROJECT_ROOT as ROOT
+
 from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(ROOT / ".env", override=True)
