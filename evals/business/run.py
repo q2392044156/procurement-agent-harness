@@ -61,7 +61,7 @@ def judge(case,erp,output,interrupts,error=None):
 
 async def one(case):
     from src.agent import factory as main
-    from src.core.settings import get_llm
+    from src.core.llm import get_llm
     from src.core.contracts import ProcurementContext
     from src.agent.runtime import bind_runtime,reset_runtime
     erp=ERP(case);registry=Registry();usage=Usage();interrupts=[];error=None;output=''
@@ -135,7 +135,7 @@ def summarize(rows):
 
 
 async def run(args):
-    from src.core.settings import LLM_API_KEY,LLM_MODEL,LLM_BASE_URL
+    from src.core.llm import LLM_API_KEY,LLM_MODEL,LLM_BASE_URL
     if not LLM_API_KEY:raise SystemExit('Missing local DeepSeek API key')
     if LLM_BASE_URL.rstrip('/') not in ('https://api.deepseek.com','https://api.deepseek.com/v1'):raise SystemExit('Unexpected model endpoint; inspect before running')
     data=extended_cases() if args.extended else cases(args.dev)

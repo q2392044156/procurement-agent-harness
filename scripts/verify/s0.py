@@ -120,7 +120,7 @@ async def main() -> int:
     check("inventory_warning ok", warning.get("code") == 0, f"items={len(warning.get('data') or [])}")
 
     try:
-        from src.core.settings import get_llm  # noqa: E402
+        from src.core.llm import get_llm  # noqa: E402
 
         reply = get_llm(thinking=False).invoke("只回复：OK")
         content = getattr(reply, "content", str(reply))

@@ -2,7 +2,7 @@
 import json
 from deepagents import RubricMiddleware
 from langchain.agents.middleware import AgentMiddleware, hook_config
-from src.agent.review.phase import HarnessPhaseState
+from src.agent.review.state import HarnessPhaseState
 from src.agent.review.policy import ReviewRoute, compose_rubric, reset_grading
 
 

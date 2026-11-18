@@ -14,8 +14,8 @@ from langchain.agents.middleware import (
 )
 
 from src.core.paths import PROMPTS_DIR, SKILLS_DIR
+from src.core.llm import get_llm
 from src.core.settings import (
-    get_llm,
     INTERRUPT_ON_TOOLS,
     skills_store_namespace,
     MAX_MODEL_CALLS,

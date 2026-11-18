@@ -7,14 +7,14 @@ import sys
 import os
 
 
-from agent.env_utils import load_env
+from src.core.env import load_env
 load_env()
 
 
 async def test_chart_generator():
     """测试图表生成工具"""
     print("[1] 测试 chart_generator...")
-    from agent.tools.chart_generator import generate_chart
+    from src.agent.tools.charts import generate_chart
 
     result = await generate_chart.ainvoke({
         "chart_type": "bar",
@@ -30,7 +30,7 @@ async def test_chart_generator():
 async def test_web_search():
     """测试Web搜索工具"""
     print("[2] 测试 web_search...")
-    from agent.tools.web_search import web_search
+    from src.agent.tools.web_search import web_search
 
     result = await web_search.ainvoke({
         "query": "工业物资采购管理"
@@ -42,7 +42,7 @@ async def test_web_search():
 async def test_mcp_tools():
     """测试MCP工具加载"""
     print("[3] 测试 MCP 工具加载...")
-    from agent.tools.mcp_client import load_mcp_tools_sync
+    from src.agent.tools.mcp_loader import load_mcp_tools_sync
 
     try:
         tools = load_mcp_tools_sync()
@@ -57,7 +57,7 @@ async def test_mcp_tools():
 async def test_subagent_loader():
     """测试子Agent配置加载"""
     print("[4] 测试子Agent配置加载...")
-    from agent.subagents.loader import load_subagent_configs
+    from src.agent.subagents.loader import load_subagent_configs
 
     configs = load_subagent_configs()
     print(f"    加载了 {len(configs)} 个子Agent配置:")
@@ -69,7 +69,7 @@ async def test_subagent_loader():
 async def test_schema():
     """测试数据模型"""
     print("[5] 测试数据模型...")
-    from agent.schema import ProcurementContext, ChatRequest
+    from src.core.contracts import ProcurementContext, ChatRequest
 
     ctx = ProcurementContext(
         user_id="test-001",

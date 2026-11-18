@@ -2,10 +2,11 @@
 Harness 编排模块（真 Harness 架构核心）
 
 职责：
-1. HarnessPhaseState — 扩展 LangGraph 状态（phase / plan / review_result）
-2. load_harness_config — 加载声明式 DSL 配置（rubrics.yaml）
-3. build_rubric / detect_task_type — 按任务类型生成评审标准
-4. HarnessPhaseMiddleware — 阶段状态机 + rubric 注入
+1. load_harness_config — 加载声明式 DSL 配置（rubrics.yaml）
+2. build_rubric / detect_task_type — 按任务类型生成评审标准
+3. HarnessPhaseMiddleware — 阶段状态机 + rubric 注入
+
+状态形状（Phase / Plan / ReviewResult / HarnessPhaseState）在 review/state.py。
 
 设计说明：
 - 阶段（phase）不再是 chat.py 里的正则猜测，而是 graph state 中的结构化字段，
@@ -18,44 +19,23 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Any
 
 import yaml
-from typing_extensions import NotRequired, TypedDict
 
 from langchain.agents.middleware import AgentMiddleware, Runtime
-from langchain.agents.middleware.types import AgentState, PrivateStateAttr
 
-from src.core.contracts import Phase, ReviewResult, Plan, PlanStep
+from src.agent.review.state import (
+    HarnessPhaseState,
+    Phase,
+    Plan,
+    PlanStep,
+    ReviewResult,
+)
 from src.core.logging import agent_logger
 
 # DSL 配置文件路径
 HARNESS_CONFIG_PATH = Path(__file__).parent / "rubrics.yaml"
-
-
-class HarnessPhaseState(AgentState):
-    """Harness 扩展状态：在 DeepAgentState 基础上增加阶段/计划/评审字段。
-
-    通过 HarnessPhaseMiddleware.state_schema 声明，由框架自动合并进 graph state，
-    因此这些字段会出现在 checkpoint 和 values 流中（可观测、可恢复）。
-    """
-
-    phase: NotRequired[str]
-    """当前阶段：planning / executing / reviewing / result（见 schema.Phase）"""
-
-    plan: NotRequired[dict]
-    """结构化任务规划（schema.Plan 序列化后的 dict）"""
-
-    review_result: NotRequired[dict]
-    """评审结果（schema.ReviewResult 序列化后的 dict）"""
-
-    _harness_rubric_source: NotRequired[Annotated[str, PrivateStateAttr]]
-    """记录 rubric 是否由本中间件自动注入，用于跨 checkpoint 清理旧 rubric。"""
-
-    review_decision: NotRequired[dict]
-    _review_start: NotRequired[Annotated[int, PrivateStateAttr]]
-    _review_write_attempted: NotRequired[Annotated[bool, PrivateStateAttr]]
-    _review_signals: NotRequired[Annotated[list[str], PrivateStateAttr]]
 
 
 # 配置缺失时的兜底（避免文件缺失导致整个 Agent 启动失败）

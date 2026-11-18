@@ -48,7 +48,7 @@ class WebSearchTests(unittest.TestCase):
         self.assertEqual(result, "DeepSeek 搜索摘要")
         self.assertEqual(post.call_args.args[0], "https://api.deepseek.com/responses")
         payload = post.call_args.kwargs["json"]
-        self.assertEqual(payload["model"], "deepseek-flash")
+        self.assertEqual(payload["model"], "deepseek-v4-pro")  # WEB_SEARCH_MODEL 默认值，不受 LLM_MODEL 影响
         self.assertEqual(payload["tools"], [{"type": "web_search"}])
         self.assertEqual(payload["tool_choice"], {"type": "web_search"})
 
