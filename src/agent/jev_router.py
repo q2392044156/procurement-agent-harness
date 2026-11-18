@@ -9,7 +9,7 @@ from typing import Literal
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
-from .review_policy import CHECKS, ROUTER_PROMPT, ReviewRoute
+from src.agent.review_policy import CHECKS, ROUTER_PROMPT, ReviewRoute
 
 ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 TASKS = {
@@ -119,7 +119,7 @@ class JevRouter:
 
 
 def build_review_router(options):
-    from .env_utils import get_env
+    from src.agent.env_utils import get_env
     provider = get_env("REVIEW_ROUTER_PROVIDER", options.get("router_provider", "deepseek"))
     timeout = options.get("router_timeout_seconds", 8)
     if provider == "jev":
@@ -127,5 +127,5 @@ def build_review_router(options):
                          min_confidence=options.get("jev_min_confidence", 0.0))
     if provider != "deepseek":
         raise ValueError("REVIEW_ROUTER_PROVIDER must be deepseek or jev")
-    from .config import get_llm
+    from src.agent.config import get_llm
     return get_llm(thinking=False, timeout=timeout, max_retries=0, max_tokens=400)

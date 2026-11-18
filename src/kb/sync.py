@@ -10,12 +10,12 @@ import httpx
 
 from qdrant_client.http import models as qm
 
-from .bm25 import build_stats, doc_sparse, save_stats
-from .chunker import chunk_pages
-from .config import COLLECTION, ERP_BASE_URL, INTERNAL_TOKEN, STATE_FILE
-from .embedder import dimension, embed_texts
-from .parser import parse_document
-from .store import all_texts, count, delete_document, ensure_collection, upsert_chunks
+from src.kb.bm25 import build_stats, doc_sparse, save_stats
+from src.kb.chunker import chunk_pages
+from src.kb.config import COLLECTION, ERP_BASE_URL, INTERNAL_TOKEN, STATE_FILE
+from src.kb.embedder import dimension, embed_texts
+from src.kb.parser import parse_document
+from src.kb.store import all_texts, count, delete_document, ensure_collection, upsert_chunks
 
 
 def _headers(user_id: str) -> dict:

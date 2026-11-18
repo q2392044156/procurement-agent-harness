@@ -26,8 +26,8 @@ from typing_extensions import NotRequired, TypedDict
 from langchain.agents.middleware import AgentMiddleware, Runtime
 from langchain.agents.middleware.types import AgentState, PrivateStateAttr
 
-from .schema import Phase, ReviewResult, Plan, PlanStep
-from .log_utils import agent_logger
+from src.agent.schema import Phase, ReviewResult, Plan, PlanStep
+from src.agent.log_utils import agent_logger
 
 # DSL 配置文件路径
 HARNESS_CONFIG_PATH = Path(__file__).parent / "harness_config.yaml"
@@ -267,7 +267,7 @@ class HarnessPhaseMiddleware(AgentMiddleware):
 
     def __init__(self, config_path: Path | None = None, router_model=None):
         self._config = load_harness_config(config_path)
-        from .review_policy import ReviewPolicy
+        from src.agent.review_policy import ReviewPolicy
         self._review_policy = ReviewPolicy(self._config, router_model)
         self.tools = []
 

@@ -18,7 +18,7 @@ from deepagents.backends.sandbox import (
     FileUploadResponse,
 )
 
-from ..log_utils import sandbox_logger
+from src.agent.log_utils import sandbox_logger
 
 
 class SandboxBackendProxy(BaseSandbox):

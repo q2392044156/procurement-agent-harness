@@ -10,7 +10,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from .log_utils import agent_logger
+from src.agent.log_utils import agent_logger
 
 
 class ReviewRoute(BaseModel):
@@ -71,7 +71,7 @@ class ReviewPolicy:
         self.model = model
 
     def rule(self, state):
-        from .harness import latest_human_text, detect_task_type, should_use_grader
+        from src.agent.harness import latest_human_text, detect_task_type, should_use_grader
         messages = state.get("messages", [])
         text = latest_human_text(messages)
         options = self.config.get("review", {})

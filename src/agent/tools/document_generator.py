@@ -21,8 +21,8 @@ from pathlib import Path
 from datetime import datetime
 from langchain_core.tools import tool
 
-from ..log_utils import agent_logger
-from ..backends.sandbox_holder import get_sandbox, has_sandbox
+from src.agent.log_utils import agent_logger
+from src.agent.backends.sandbox_holder import get_sandbox, has_sandbox
 
 # 沙箱内输出目录
 SANDBOX_OUTPUT_DIR = "/workspace/output"

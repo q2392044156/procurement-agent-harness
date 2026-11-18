@@ -12,7 +12,7 @@ import zlib
 from collections import Counter
 from pathlib import Path
 
-from .config import BM25_STATS_FILE
+from src.kb.config import BM25_STATS_FILE
 
 K1 = 1.2
 B = 0.75

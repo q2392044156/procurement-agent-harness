@@ -118,7 +118,7 @@ def rank(query: str, candidates: Sequence, config=None, now: Optional[datetime] 
     """给候选记忆打分并按分数降序返回 ``(item, score)`` 列表。"""
     if not candidates:
         return []
-    from .config import DEFAULT_MEMORY_CONFIG
+    from src.agent.memory.config import DEFAULT_MEMORY_CONFIG
 
     cfg = config or DEFAULT_MEMORY_CONFIG
     query_tokens = tokenize(query)

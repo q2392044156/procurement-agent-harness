@@ -4,7 +4,7 @@ LLM、Store、Checkpointer、沙箱连接参数
 """
 import os
 from langchain_deepseek import ChatDeepSeek
-from .env_utils import get_env, get_env_int
+from src.agent.env_utils import get_env, get_env_int
 
 # ============ LLM 配置 ============
 LLM_MODEL = get_env("LLM_MODEL", "deepseek-flash")

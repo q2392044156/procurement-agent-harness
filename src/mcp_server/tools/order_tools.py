@@ -5,8 +5,8 @@ order_create / order_update / order_page / order_get / order_search_details / or
 import json
 from typing import Optional
 from fastmcp import FastMCP
-from ..http_base import erp_client
-from ._result import check_batch, idempotency_headers, mark_verified
+from src.mcp_server.http_base import erp_client
+from src.mcp_server.tools._result import check_batch, idempotency_headers, mark_verified
 
 
 def register_order_tools(mcp: FastMCP):

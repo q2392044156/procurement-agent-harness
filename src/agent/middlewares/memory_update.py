@@ -15,11 +15,11 @@ from typing import Any
 
 from langchain.agents.middleware import AgentMiddleware, Runtime
 
-from ..log_utils import middleware_logger
-from ..memory.config import DEFAULT_MEMORY_CONFIG, MemoryConfig
-from ..memory.extractor import CHART_KEYWORDS, OUTPUT_KEYWORDS, extract_preferences
-from ..memory.keeper import MemoryKeeper
-from ..memory.run_config import current_thread_id
+from src.agent.log_utils import middleware_logger
+from src.agent.memory.config import DEFAULT_MEMORY_CONFIG, MemoryConfig
+from src.agent.memory.extractor import CHART_KEYWORDS, OUTPUT_KEYWORDS, extract_preferences
+from src.agent.memory.keeper import MemoryKeeper
+from src.agent.memory.run_config import current_thread_id
 
 
 class MemoryUpdateMiddleware(AgentMiddleware):
@@ -64,8 +64,8 @@ class MemoryUpdateMiddleware(AgentMiddleware):
             current_messages = messages[start:]
             updates = extract_preferences(current_messages, self._config)
             if self._config.llm_extraction_enabled and current_messages:
-                from ..config import get_llm
-                from ..memory.extractor import llm_extract_preferences
+                from src.agent.config import get_llm
+                from src.agent.memory.extractor import llm_extract_preferences
                 try:
                     updates.update(llm_extract_preferences(current_messages, get_llm(thinking=False)))
                 except Exception as exc:

@@ -14,10 +14,10 @@ from typing import Any
 
 from langchain.agents.middleware import AgentMiddleware, Runtime
 
-from ..log_utils import middleware_logger
-from ..memory.config import DEFAULT_MEMORY_CONFIG, MemoryConfig
-from ..memory.keeper import MemoryKeeper
-from ..memory.run_config import current_thread_id
+from src.agent.log_utils import middleware_logger
+from src.agent.memory.config import DEFAULT_MEMORY_CONFIG, MemoryConfig
+from src.agent.memory.keeper import MemoryKeeper
+from src.agent.memory.run_config import current_thread_id
 
 
 class MemoryConsolidationMiddleware(AgentMiddleware):
@@ -46,7 +46,7 @@ class MemoryConsolidationMiddleware(AgentMiddleware):
             thread_id = self._thread_id(runtime)
             keeper = MemoryKeeper(self._store, self._user_id, self._config)
 
-            from ..memory.extractor import summarize_episode
+            from src.agent.memory.extractor import summarize_episode
 
             digest = summarize_episode(messages, self._config, thread_id=thread_id)
             # Without a stable conversation ID, skip the archive rather than

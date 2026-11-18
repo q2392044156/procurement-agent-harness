@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import re
 
-from .config import FASTEMBED_CACHE, RERANK_MODEL, RERANKER
+from src.kb.config import FASTEMBED_CACHE, RERANK_MODEL, RERANKER
 
 _cross_encoder = None
 _cross_encoder_failed = False
