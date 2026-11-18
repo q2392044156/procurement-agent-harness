@@ -125,9 +125,15 @@ async def rate_limit(request: Request, call_next):
 
 @app.middleware("http")
 async def require_internal_token(request: Request, call_next):
-    """配置共享令牌后，仅接受业务后端发起的内部 API 调用。"""
+    """配置共享令牌后，仅接受业务后端发起的内部 API 调用。
+
+    ``/api/download/`` 例外：下载链接是直接渲染给浏览器点击的（``<a href>``），
+    浏览器无法附带 ``X-Internal-Token`` 请求头。该路由只按文件名回读
+    ``data/download/`` 下的生成文件，并做了目录穿越校验。
+    """
     expected = os.getenv("AGENT_INTERNAL_TOKEN", "").strip()
-    if expected and request.url.path.startswith("/api/"):
+    path = request.url.path
+    if expected and path.startswith("/api/") and not path.startswith("/api/download/"):
         supplied = request.headers.get("X-Internal-Token", "")
         if not hmac.compare_digest(expected, supplied):
             return JSONResponse(status_code=401, content={"detail": "invalid internal token"})
@@ -143,18 +149,35 @@ DOWNLOAD_DIR = Path(__file__).resolve().parents[2] / "data" / "download"
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
+_DOWNLOAD_MEDIA_TYPES = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".svg": "image/svg+xml",
+    ".gif": "image/gif",
+    ".pdf": "application/pdf",
+    ".md": "text/markdown; charset=utf-8",
+    ".csv": "text/csv; charset=utf-8",
+    ".html": "text/html; charset=utf-8",
+    ".json": "application/json",
+}
+
+
 @app.get("/api/download/{filename}")
 async def download_file(filename: str):
-    """提供生成文件（图表PNG等）的HTTP下载"""
-    file_path = DOWNLOAD_DIR / filename
-    if not file_path.exists() or not file_path.is_file():
-        from fastapi import HTTPException
+    """提供生成文件（图表 PNG、报告 MD 等）的下载/预览。"""
+    from fastapi import HTTPException
+
+    # 只允许 DOWNLOAD_DIR 顶层的文件名，挡掉 ../ 与绝对路径
+    candidate = (DOWNLOAD_DIR / filename).resolve()
+    if candidate.parent != DOWNLOAD_DIR.resolve() or not candidate.is_file():
         raise HTTPException(status_code=404, detail=f"文件不存在: {filename}")
-    return FileResponse(
-        path=str(file_path),
-        filename=filename,
-        media_type="application/octet-stream",
-    )
+
+    media_type = _DOWNLOAD_MEDIA_TYPES.get(candidate.suffix.lower(), "application/octet-stream")
+    inline = media_type.startswith("image/")
+    headers = {"Content-Disposition": f'{"inline" if inline else "attachment"}; filename="{filename}"'}
+    return FileResponse(path=str(candidate), media_type=media_type, headers=headers)
 
 
 @app.get("/")
