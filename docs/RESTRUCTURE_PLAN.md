@@ -321,6 +321,16 @@ markers = ["live: 需要真实 LLM / 平台 / Docker"]
 
 **验收**：`python -m pytest -q` 全绿（与 P0 基线同集合）；`python -m compileall -q src tests` 通过。
 
+#### P2 执行记录（已完成，与计划的偏差）
+
+1. **没建 `tests/conftest.py`**：`pyproject.toml` 的 `pythonpath = ["."]` 已覆盖 `import src.*` / `import tests.support.*`，当前没有需要共享的 fixture，等真需要时再加。
+2. **CI 保留「模块直跑」而不是全量 pytest**：`tests/memory/test_memory_layer.py` 是自定义脚手架，里面有个装饰器就叫 `test`，与 pytest 的 `python_functions = "test*"` 撞名，采集直接报错（`ERROR ... ::test`）。已把装饰器改名 `case`，现在**两种跑法都通**：`python -m tests.memory.test_memory_layer`（34/34）和 `pytest`（34 passed）。CI 仍用模块直跑，保持与 P0 基线同一口径。
+3. **新发现第 3 个跨文件引用点**：`evals/business/component_metrics.py:8` 也 `from src.test.test_memory_layer import FakeStore`——计划里只记了 `test_memory_integration.py`。两处都改为 `from tests.support.fakes import ...`。
+4. **从 `scripts/` 迁入 `tests/<域>/` 的 4 个文件 ROOT 深度变了**：`parents[1]` → `parents[2]`（`tests/kb/test_{grounding,ingestion,generation}.py`、`tests/review/test_hitl_scope.py`）。`tests/tools/measure_skill_prompt.py` 从 `src/test/` 迁入，深度不变（`parents[2]` 仍是仓库根），无需改。
+5. **两处既有红灯（不是本次引入，也未进 CI 集合）**：
+   - `tests/tools/test_web_search.py::test_uses_deepseek_key_and_responses_web_search_tool` 断言 `payload["model"] == "deepseek-flash"`，但当前配置解析出 `deepseek-v4-pro` → 测试里的硬编码已过期。
+   - 本机未装 `pymupdf`(fitz)，`tests/integration/*` 与 `tests/kb/test_ingestion.py` 采集期即 `ModuleNotFoundError`；CI 装全量 requirements 后不受影响。
+
 ### P3 数据与代码分离（1 h，中风险）
 
 1. `git mv src/skills skills`。

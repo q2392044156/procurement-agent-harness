@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from langchain_core.messages import SystemMessage
-from src.test.test_memory_layer import FakeStore
+from tests.support.fakes import FakeStore
 from src.agent.memory.keeper import MemoryKeeper
 from src.agent.middlewares.warm_memory import WarmMemoryMiddleware, WARM_MEMORY_SLOT
 
