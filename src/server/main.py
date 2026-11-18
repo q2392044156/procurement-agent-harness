@@ -2,7 +2,6 @@
 FastAPI 应用入口
 CORS 全开、路由注册、startup/shutdown 事件
 """
-import sys
 import os
 import asyncio
 import hmac
@@ -10,18 +9,15 @@ import time
 from pathlib import Path
 from contextlib import asynccontextmanager, suppress
 
-# 确保项目根目录在 path 中
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pymongo.errors import PyMongoError
 
-from src.api_view.api.chat import router as chat_router
-from src.api_view.api.history import router as history_router
-from src.api_view.api.observability import router as observability_router
-from src.api_view.web_config import close_mongo_client
+from src.server.routes.chat import router as chat_router
+from src.server.routes.history import router as history_router
+from src.server.routes.observability import router as observability_router
+from src.server.settings import close_mongo_client
 from src.core.logging import web_logger
 from src.agent.backends.sandbox_manager import sandbox_manager
 from src.core.settings import SANDBOX_MAINTENANCE_INTERVAL_SECONDS

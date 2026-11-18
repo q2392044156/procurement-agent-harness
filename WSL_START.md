@@ -48,7 +48,7 @@ cd ~/projects/procurement-agent-harness
 
 ```bash
 cd ~/projects/procurement-agent-harness
-.venv/bin/python -m src.api_view.web_main
+.venv/bin/python -m src.server.main
 ```
 
 终端 3、4（可选）：独立 Web 平台

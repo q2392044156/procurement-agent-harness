@@ -10,7 +10,7 @@ from datetime import datetime
 
 from src.core.logging import web_logger
 from src.core.contracts import ProcurementContext
-from src.api_view.web_config import get_db
+from src.server.settings import get_db
 
 
 @dataclass
@@ -68,7 +68,7 @@ class AgentLoader:
         try:
             from langgraph.checkpoint.mongodb import MongoDBSaver
             from src.infra.mongodb_store import MongoDBStore
-            from src.api_view.web_config import MONGODB_URI, MONGODB_DB_NAME
+            from src.server.settings import MONGODB_URI, MONGODB_DB_NAME
 
             # 生产级存储：MongoDB 持久化
             from pymongo import MongoClient
