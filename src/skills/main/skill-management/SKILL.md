@@ -53,9 +53,9 @@ version: 1.0.0
 - 依赖已安装
 - 输出格式正确
 
-### 4. 分配技能
-使用 `assign_skill` 工具将技能分配给指定子Agent：
-- 下载 → 创建 → 测试 → 分配 → 持久化到 StoreBackend
+### 4. 挂载技能
+技能落到 `/skills/custom/<name>/` 后会由 `attach_to_subagents` 自动挂到主 Agent 与各子 Agent 的技能读写工具上，无需单独"分配"：
+- 下载 → 创建 → 测试 → 持久化到 StoreBackend → 沙箱重建时自动回灌
 
 ## 注意事项
 - 技能文件存储在 `/persisted-skills/` 路径（StoreBackend）
