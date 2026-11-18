@@ -83,10 +83,8 @@ def main() -> int:
     purpose = f"S7-SSE-HITL-{int(time.time())}"
     thread = f"sse-hitl-{int(time.time())}"
     message = (
-        "立即调用工具，不要询问确认，也不要只说计划。"
-        f"调用 requisition_create，参数 required_date=2026-11-25，purpose={purpose}，"
-        "items 必须是 JSON 字符串："
-        '[{"materialId":1,"quantity":1,"estimatedUnitPrice":10}]。'
+        f"帮我建一条采购申请：物料 ID 1，数量 1，预估单价 10 元，需求日期 2026-11-25，"
+        f"用途：{purpose}（3 号产线设备检修备件采购，走正常审批）。"
     )
     events = chat(message, thread)
     print("hitl event kinds:", [kind for kind, _ in events])
