@@ -26,10 +26,10 @@ import uuid
 from typing import Dict, Optional
 from datetime import datetime, timedelta
 
-from .custom_opensandbox import CustomOpenSandbox
-from .sandbox_setup import SandboxConfig, create_secure_sandbox
-from ..config import SANDBOX_IDLE_TIMEOUT_MINUTES, SANDBOX_WARM_POOL_SIZE
-from ..log_utils import sandbox_logger
+from src.agent.backends.custom_opensandbox import CustomOpenSandbox
+from src.agent.backends.sandbox_setup import SandboxConfig, create_secure_sandbox
+from src.agent.config import SANDBOX_IDLE_TIMEOUT_MINUTES, SANDBOX_WARM_POOL_SIZE
+from src.agent.log_utils import sandbox_logger
 
 
 # ============================================================

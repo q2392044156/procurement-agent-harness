@@ -2,8 +2,8 @@
 import asyncio
 from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import SystemMessage
-from ..memory.keeper import MemoryKeeper
-from ..log_utils import middleware_logger
+from src.agent.memory.keeper import MemoryKeeper
+from src.agent.log_utils import middleware_logger
 
 WARM_MEMORY_SLOT = "<!-- LIVE_USER_MEMORY -->"
 

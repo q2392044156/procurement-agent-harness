@@ -10,7 +10,7 @@ from pathlib import Path
 
 from langchain.agents.middleware import AgentMiddleware
 
-from ..observability import current_trace
+from src.agent.observability import current_trace
 
 ROOT = Path(__file__).resolve().parents[3]
 USAGE_FILE = Path(os.getenv("MODEL_USAGE_FILE", str(ROOT / "logs" / "model_usage.jsonl")))

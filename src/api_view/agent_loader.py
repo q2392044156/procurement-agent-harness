@@ -8,9 +8,9 @@ from dataclasses import dataclass
 from typing import Any, Optional
 from datetime import datetime
 
-from ..agent.log_utils import web_logger
-from ..agent.schema import ProcurementContext
-from .web_config import get_db
+from src.agent.log_utils import web_logger
+from src.agent.schema import ProcurementContext
+from src.api_view.web_config import get_db
 
 
 @dataclass
@@ -67,8 +67,8 @@ class AgentLoader:
         web_logger.info("Initializing shared Agent resources...")
         try:
             from langgraph.checkpoint.mongodb import MongoDBSaver
-            from ..infra.mongodb_store import MongoDBStore
-            from .web_config import MONGODB_URI, MONGODB_DB_NAME
+            from src.infra.mongodb_store import MongoDBStore
+            from src.api_view.web_config import MONGODB_URI, MONGODB_DB_NAME
 
             # 生产级存储：MongoDB 持久化
             from pymongo import MongoClient
@@ -129,7 +129,7 @@ class AgentLoader:
 
     def _build_agent_for_user(self, user_id: str, username: str):
         """在线程池中构建 Agent；其中包含 Docker/Mongo 同步 I/O。"""
-        from ..agent.main_agent import create_main_agent
+        from src.agent.main_agent import create_main_agent
 
         context = ProcurementContext(user_id=user_id, username=username)
         return create_main_agent(

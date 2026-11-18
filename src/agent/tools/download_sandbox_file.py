@@ -19,7 +19,7 @@ import base64
 from pathlib import Path
 from langchain_core.tools import tool
 
-from ..log_utils import agent_logger
+from src.agent.log_utils import agent_logger
 
 DOWNLOAD_DIR = Path(__file__).resolve().parents[3] / "data" / "download"
 

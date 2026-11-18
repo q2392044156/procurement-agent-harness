@@ -6,7 +6,7 @@ import os
 import sys
 from pathlib import Path
 
-from .observability import read_turns
+from src.agent.observability import read_turns
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TRACE = ROOT / "logs" / "tool_trace.jsonl"

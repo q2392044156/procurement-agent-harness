@@ -15,8 +15,8 @@ from typing import List
 from langchain_core.tools import BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
-from ..config import MCP_SERVER_URL, MCP_SSE_URL
-from ..log_utils import mcp_logger
+from src.agent.config import MCP_SERVER_URL, MCP_SSE_URL
+from src.agent.log_utils import mcp_logger
 
 # 重试配置
 MAX_RETRIES = 3
@@ -68,7 +68,7 @@ async def load_mcp_tools(user_id: str = "default_user", force_refresh: bool = Fa
             if tools:
                 from langchain_core.tools import StructuredTool
 
-                from ..middlewares.tool_trace import record_tool_call
+                from src.agent.middlewares.tool_trace import record_tool_call
 
                 def _wrap(tool, uid: str):
                     async def _traced(**kwargs):

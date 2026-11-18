@@ -15,13 +15,10 @@ import time
 from datetime import datetime
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-from . import namespaces as ns
-from . import scoring
-from .config import DEFAULT_MEMORY_CONFIG, MemoryConfig
-from .types import (
-    COLD, EPISODIC, PROCEDURAL, SEMANTIC, WARM,
-    MemoryItem, new_id, now_iso,
-)
+from src.agent.memory import namespaces as ns
+from src.agent.memory import scoring
+from src.agent.memory.config import DEFAULT_MEMORY_CONFIG, MemoryConfig
+from src.agent.memory.types import COLD, EPISODIC, PROCEDURAL, SEMANTIC, WARM, MemoryItem, new_id, now_iso
 
 # 只有这些"稳定偏好"会进语义记忆并做冲突追踪；
 # recent_* 属于易变信息，只留在 WARM 投影里，避免每轮都产生一条新版本。
@@ -543,7 +540,7 @@ class MemoryKeeper:
         now: Optional[datetime] = None,
     ) -> Dict[str, Any]:
         """一轮会话结束后的整合：抽取偏好 → 归档情节 → 遗忘扫描。"""
-        from .extractor import extract_preferences, summarize_episode
+        from src.agent.memory.extractor import extract_preferences, summarize_episode
 
         result: Dict[str, Any] = {"preferences": {}, "episode": None, "forgotten": {}}
         if not self.available or not messages:

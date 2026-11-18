@@ -1,7 +1,7 @@
 """结构化切分：按页、按段落/标题合并，保留页码与章节。"""
 import re
 
-from .config import CHUNK_OVERLAP, CHUNK_SIZE
+from src.kb.config import CHUNK_OVERLAP, CHUNK_SIZE
 
 _HEADING = re.compile(r"^(#{1,6}\s+|第[一二三四五六七八九十百]+[章节条]\s*|[一二三四五六七八九十]+、|\d+\.\s+)")
 _SENTENCE = re.compile(r"(?<=[。！？；.!?;])")

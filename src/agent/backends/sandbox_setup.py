@@ -17,10 +17,10 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional
 
-from .custom_opensandbox import CustomOpenSandbox
-from ..log_utils import sandbox_logger
-from ..config import SANDBOX_WORK_DIR, SANDBOX_IMAGE
-from ...core.paths import PROJECT_ROOT, SKILLS_DIR
+from src.agent.backends.custom_opensandbox import CustomOpenSandbox
+from src.agent.log_utils import sandbox_logger
+from src.agent.config import SANDBOX_WORK_DIR, SANDBOX_IMAGE
+from src.core.paths import PROJECT_ROOT, SKILLS_DIR
 
 
 # ============================================================

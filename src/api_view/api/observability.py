@@ -7,8 +7,8 @@ from pathlib import Path
 
 from fastapi import APIRouter, Query
 
-from ...agent.metrics import summarize
-from ...agent.observability import TURN_FILE, read_turns
+from src.agent.metrics import summarize
+from src.agent.observability import TURN_FILE, read_turns
 
 router = APIRouter(prefix="/api/observability", tags=["observability"])
 

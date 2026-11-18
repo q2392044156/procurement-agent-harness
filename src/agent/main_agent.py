@@ -16,18 +16,13 @@ from langchain.agents.middleware import (
     HumanInTheLoopMiddleware,
 )
 
-from ..core.paths import PROJECT_ROOT, PROMPTS_DIR, SKILLS_DIR
-from .config import (
-    get_llm,
-    INTERRUPT_ON_TOOLS, skills_store_namespace,
-    MAX_MODEL_CALLS, MAX_TOOL_CALLS,
-    SANDBOX_HEALTH_CHECK_INTERVAL_SECONDS,
-)
-from .schema import ProcurementContext
-from .log_utils import agent_logger
-from .memory.config import DEFAULT_MEMORY_CONFIG
-from .memory.keeper import MemoryKeeper
-from .prompts.main import MAIN_SYSTEM_PROMPT, MEMORY_USAGE_PROMPT
+from src.core.paths import PROJECT_ROOT, PROMPTS_DIR, SKILLS_DIR
+from src.agent.config import get_llm, INTERRUPT_ON_TOOLS, skills_store_namespace, MAX_MODEL_CALLS, MAX_TOOL_CALLS, SANDBOX_HEALTH_CHECK_INTERVAL_SECONDS
+from src.agent.schema import ProcurementContext
+from src.agent.log_utils import agent_logger
+from src.agent.memory.config import DEFAULT_MEMORY_CONFIG
+from src.agent.memory.keeper import MemoryKeeper
+from src.agent.prompts.main import MAIN_SYSTEM_PROMPT, MEMORY_USAGE_PROMPT
 
 # 项目内其它目录
 MEMORY_DIR = Path(__file__).parent / "memory"
@@ -136,7 +131,7 @@ def _load_skills_prompt(skills_dir: Path) -> str:
     """
     兼容入口：仅返回基础技能元数据，不读取正文注入提示词。
     """
-    from .progressive_skills import SkillCatalog
+    from src.agent.progressive_skills import SkillCatalog
     return SkillCatalog(skills_dir).index()
 
 
@@ -222,9 +217,9 @@ def create_main_agent(
     sandbox_manager_instance = None
     managed_sandbox = False
     try:
-        from .backends.sandbox_manager import sandbox_manager
-        from .backends.sandbox_proxy import SandboxBackendProxy
-        from .backends.sandbox_holder import set_sandbox
+        from src.agent.backends.sandbox_manager import sandbox_manager
+        from src.agent.backends.sandbox_proxy import SandboxBackendProxy
+        from src.agent.backends.sandbox_holder import set_sandbox
 
         raw_sandbox = sandbox_manager.get_sandbox(user_context.user_id)
         sandbox_backend = SandboxBackendProxy(raw_sandbox)
@@ -242,7 +237,7 @@ def create_main_agent(
             f"Managed Docker sandbox unavailable ({e}), falling back to LocalShell"
         )
         sandbox_backend = LocalShellBackend(virtual_mode=True)
-        from .backends.sandbox_holder import set_sandbox
+        from src.agent.backends.sandbox_holder import set_sandbox
         set_sandbox(None, user_context.user_id)
 
     # deepagents >= 0.7 要求传入已初始化的 Backend 实例，
@@ -261,14 +256,14 @@ def create_main_agent(
     )
 
     # ===== 3. 加载工具 =====
-    from .tools.mcp_client import load_mcp_tools_sync
-    from .tools.chart_generator import generate_chart
-    from .tools.web_search import web_search
-    from .tools.web_fetch import web_fetch, install_skill
-    from .tools.skill_management import list_user_skills
-    from .tools.hitl_tools import request_order_info
-    from .tools.download_sandbox_file import download_sandbox_file, list_sandbox_files
-    from .tools.document_generator import generate_document, generate_table_report
+    from src.agent.tools.mcp_client import load_mcp_tools_sync
+    from src.agent.tools.chart_generator import generate_chart
+    from src.agent.tools.web_search import web_search
+    from src.agent.tools.web_fetch import web_fetch, install_skill
+    from src.agent.tools.skill_management import list_user_skills
+    from src.agent.tools.hitl_tools import request_order_info
+    from src.agent.tools.download_sandbox_file import download_sandbox_file, list_sandbox_files
+    from src.agent.tools.document_generator import generate_document, generate_table_report
 
     mcp_tools = load_mcp_tools_sync(user_context.user_id)
     custom_tools = [generate_chart, web_search, web_fetch, install_skill, list_user_skills, request_order_info,
@@ -277,14 +272,12 @@ def create_main_agent(
 
     # 三层记忆：COLD 层按需检索 + 显式写入（WARM 层已在系统提示词里常驻注入）
     if DEFAULT_MEMORY_CONFIG.memory_tools_enabled:
-        from .tools.memory_tools import read_memory, remember
+        from src.agent.tools.memory_tools import read_memory, remember
         custom_tools.extend([read_memory, remember])
     all_tools = mcp_tools + custom_tools
 
     # Prompt disclosure is independent from physical sandbox file synchronization.
-    from .progressive_skills import (
-        SkillCatalog, ProgressiveSkillsMiddleware, attach_to_subagents, SLOT,
-    )
+    from src.agent.progressive_skills import SkillCatalog, ProgressiveSkillsMiddleware, attach_to_subagents, SLOT
     skill_catalog = SkillCatalog(SKILLS_DIR, store=store, user_id=user_context.user_id,
                                  sandbox=managed_sandbox)
     skill_read_tools = skill_catalog.tools()
@@ -296,7 +289,7 @@ def create_main_agent(
     )
 
     # ===== 4. 加载子Agent配置 =====
-    from .subagents.loader import load_subagent_configs, resolve_subagent_tools, get_delegation_context_prompt
+    from src.agent.subagents.loader import load_subagent_configs, resolve_subagent_tools, get_delegation_context_prompt
     subagent_configs = load_subagent_configs()
     subagents = resolve_subagent_tools(subagent_configs, all_tools)
     attach_to_subagents(subagents, skill_catalog, skill_read_tools)
@@ -305,24 +298,24 @@ def create_main_agent(
 
     # ===== 5. 组装中间件栈 =====
     # 自定义中间件
-    from .middlewares.sandbox_health import SandboxHealthMiddleware
-    from .middlewares.skills_sync import SkillsSyncMiddleware
-    from .middlewares.user_skills_restore import UserSkillsRestoreMiddleware
-    from .middlewares.tools_summarization import ToolsSummarizationMiddleware
-    from .middlewares.memory_update import MemoryUpdateMiddleware
-    from .middlewares.memory_consolidation import MemoryConsolidationMiddleware
-    from .middlewares.warm_memory import WarmMemoryMiddleware, WARM_MEMORY_SLOT
-    from .middlewares.sandbox_breaker import SandboxCircuitBreakerMiddleware
-    from .middlewares.model_usage import ModelUsageMiddleware
+    from src.agent.middlewares.sandbox_health import SandboxHealthMiddleware
+    from src.agent.middlewares.skills_sync import SkillsSyncMiddleware
+    from src.agent.middlewares.user_skills_restore import UserSkillsRestoreMiddleware
+    from src.agent.middlewares.tools_summarization import ToolsSummarizationMiddleware
+    from src.agent.middlewares.memory_update import MemoryUpdateMiddleware
+    from src.agent.middlewares.memory_consolidation import MemoryConsolidationMiddleware
+    from src.agent.middlewares.warm_memory import WarmMemoryMiddleware, WARM_MEMORY_SLOT
+    from src.agent.middlewares.sandbox_breaker import SandboxCircuitBreakerMiddleware
+    from src.agent.middlewares.model_usage import ModelUsageMiddleware
     # Harness 阶段状态机 + 评审器（真 Harness 架构核心）
-    from .harness import HarnessPhaseMiddleware, load_harness_config
-    from .middlewares.review_gate import ReviewExecutionGate, SafeRubricMiddleware
+    from src.agent.harness import HarnessPhaseMiddleware, load_harness_config
+    from src.agent.middlewares.review_gate import ReviewExecutionGate, SafeRubricMiddleware
 
     # 读取 Harness DSL 配置中的评审迭代上限
     _harness_config = load_harness_config()
     _review_cfg = _harness_config.get("review", {}) if isinstance(_harness_config, dict) else {}
     _review_max_iterations = _review_cfg.get("max_iterations", 3)
-    from .jev_router import build_review_router
+    from src.agent.jev_router import build_review_router
     router_llm = build_review_router(_review_cfg)
 
     # 注意：create_deep_agent 内部已自动添加：

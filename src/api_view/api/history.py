@@ -4,7 +4,7 @@
 """
 from fastapi import APIRouter, Query
 
-from ..agent_loader import agent_loader
+from src.api_view.agent_loader import agent_loader
 
 router = APIRouter(prefix="/api/history", tags=["history"])
 

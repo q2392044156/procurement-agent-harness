@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List, Optional, Sequence
 
-from .config import MemoryConfig, DEFAULT_MEMORY_CONFIG
+from src.agent.memory.config import MemoryConfig, DEFAULT_MEMORY_CONFIG
 
 # ---------------------------------------------------------------- 关键词表
 

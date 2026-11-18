@@ -22,9 +22,9 @@ import yaml
 from pathlib import PurePosixPath
 from langchain_core.tools import tool
 
-from ..config import skills_store_namespace
-from ..log_utils import agent_logger
-from ..runtime_context import get_current_store, get_current_user_id
+from src.agent.config import skills_store_namespace
+from src.agent.log_utils import agent_logger
+from src.agent.runtime_context import get_current_store, get_current_user_id
 
 
 def _strip_html(html: str) -> str:
@@ -372,7 +372,7 @@ def install_skill(url: str, skill_name: str = "") -> str:
     skill_name = re.sub(r"[^\w\-]", "_", skill_name)
 
     # 获取沙箱实例（安全隔离环境）
-    from ..backends.sandbox_holder import get_sandbox
+    from src.agent.backends.sandbox_holder import get_sandbox
     sandbox = get_sandbox()
 
     try:
