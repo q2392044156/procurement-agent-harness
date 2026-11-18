@@ -17,7 +17,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional
 
-from src.agent.backends.custom_opensandbox import CustomOpenSandbox
+from src.sandbox.opensandbox import CustomOpenSandbox
 from src.core.logging import sandbox_logger
 from src.core.settings import SANDBOX_WORK_DIR, SANDBOX_IMAGE
 from src.core.paths import PROJECT_ROOT, SKILLS_DIR

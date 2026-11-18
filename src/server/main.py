@@ -19,7 +19,7 @@ from src.server.routes.history import router as history_router
 from src.server.routes.observability import router as observability_router
 from src.server.settings import close_mongo_client
 from src.core.logging import web_logger
-from src.agent.backends.sandbox_manager import sandbox_manager
+from src.sandbox.manager import sandbox_manager
 from src.core.settings import SANDBOX_MAINTENANCE_INTERVAL_SECONDS
 
 

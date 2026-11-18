@@ -78,7 +78,7 @@ async def one(case):
             # Production prompts, review, skills and HITL kept; no host shell or web tools.
             return create_deep_agent(**kw)
         manager=SimpleNamespace(get_sandbox=lambda *a: (_ for _ in ()).throw(RuntimeError('evaluation uses state-only sandbox')))
-        stack.enter_context(patch.dict('sys.modules',{'src.agent.backends.sandbox_manager':SimpleNamespace(sandbox_manager=manager)}))
+        stack.enter_context(patch.dict('sys.modules',{'src.sandbox.manager':SimpleNamespace(sandbox_manager=manager)}))
         stack.enter_context(patch.object(main,'LocalShellBackend',lambda **kw:StateBackend()))
         stack.enter_context(patch.object(main,'create_deep_agent',safe_builder))
         stack.enter_context(patch('src.agent.tools.mcp_client.load_mcp_tools_sync',return_value=registry.tools))

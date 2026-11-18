@@ -217,9 +217,9 @@ def create_main_agent(
     sandbox_manager_instance = None
     managed_sandbox = False
     try:
-        from src.agent.backends.sandbox_manager import sandbox_manager
-        from src.agent.backends.sandbox_proxy import SandboxBackendProxy
-        from src.agent.backends.sandbox_holder import set_sandbox
+        from src.sandbox.manager import sandbox_manager
+        from src.sandbox.proxy import SandboxBackendProxy
+        from src.sandbox.holder import set_sandbox
 
         raw_sandbox = sandbox_manager.get_sandbox(user_context.user_id)
         sandbox_backend = SandboxBackendProxy(raw_sandbox)
@@ -237,7 +237,7 @@ def create_main_agent(
             f"Managed Docker sandbox unavailable ({e}), falling back to LocalShell"
         )
         sandbox_backend = LocalShellBackend(virtual_mode=True)
-        from src.agent.backends.sandbox_holder import set_sandbox
+        from src.sandbox.holder import set_sandbox
         set_sandbox(None, user_context.user_id)
 
     # deepagents >= 0.7 要求传入已初始化的 Backend 实例，

@@ -16,8 +16,8 @@ import httpx
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.agent.metrics import summarize  # noqa: E402
-from src.agent.observability import read_turns  # noqa: E402
+from src.observability.metrics import summarize  # noqa: E402
+from src.observability.trace import read_turns  # noqa: E402
 
 
 def esc(value) -> str:
