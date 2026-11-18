@@ -420,16 +420,33 @@ markers = ["live: 需要真实 LLM / 平台 / Docker"]
 `src.mcp_server.server_main` 与本机缺 `fitz` 导致的 `tests/integration/*`；
 `scripts/smoke/sse_smoke.py` 需要平台 + MCP 同时在跑，同样留到有环境时验收。
 
-### P5 内核抽取与反向依赖修复（可选，2 h）
+### P5 内核抽取与反向依赖修复（已完成）
 
-**状态：第 2 项已在 P4a 顺带完成**（`get_llm` 在 `core/settings.py`，`kb` 不再 import
-`agent`；`schema.py` → `core/contracts.py` 也已落地）。剩余两项尚未做，按需再决定：
+**状态：已完成（提交 `P5` 见执行记录）**：
 
-1. `core/settings.py` 仍同时放「环境变量读取」与「LLM 工厂」，可拆成 `core/settings.py` + `core/llm.py`。
-2. `core/contracts.py` 里的 `AgentState/Phase/Plan/ReviewResult` 可下沉到 `agent/review/state.py`，
-   让 `core` 只留对外契约。
+1. `core/settings.py` 拆出 `core/llm.py`：`LLM_*` 常量 + `get_llm()` 全部搬走，
+   `settings.py` 只留「运行配置」（MongoDB / MCP / 沙箱 / Store 命名空间 / 调用上限 / 中断策略）。
+   两个模块互不依赖，只共用 `core/env.py`。
+2. `core/contracts.py` 里的 `Phase / PlanStep / Plan / ReviewResult` 与
+   `HarnessPhaseState`（原在 `agent/review/phase.py`）下沉到 `agent/review/state.py`，
+   `core/contracts.py` 只留对外契约（`ChatRequest` / `ResumeRequest` / `ProcurementContext` /
+   `DisplayMessage` / `ConversationRecord` / `UserPreferences` / `SSEEvent`）。
 
-**验收**：`python -c "import src.kb.reranker"` 不再间接加载 agent 包；pytest 全绿。
+**顺带修掉的既有问题**（不修则 `pytest tests` 无法收集）：
+
+- `tests/integration/{test_all_tools,test_agent_smoke,test_mcp}.py` 仍用 P4 之前的
+  `from agent.env_utils / agent.schema / agent.tools.chart_generator` 路径，
+  且它们是「手动跑、要真环境」的脚本而非 pytest 用例 → 改名为
+  `tests/integration/manual_{all_tools,agent_smoke,mcp_check}.py` 并修正为 `src.*` 绝对导入。
+- `tests/kb/test_ingestion.py` 把 OCR/切分/BM25 断言写在模块顶层（import 即执行、依赖
+  `rapidocr_onnxruntime` 与硬编码 `E:\project\my_project2\.tmp\...`）→ 改成 4 个 pytest 用例，
+  临时文件用 `tmp_path`，OCR 用 `importorskip` 跳过。
+- `tests/tools/test_web_search.py` 断言 `model == "deepseek-flash"`，而代码默认已是
+  `WEB_SEARCH_MODEL=deepseek-v4-pro` → 断言改为默认值并注明不受 `LLM_MODEL` 影响。
+
+**验收**：`compileall` 0；128 个模块 import 冒烟 fail=0；静态导入检查 unresolved=0；
+`pytest tests` **117 passed, 1 skipped**；`python -m tests.memory.test_memory_layer` 34/34；
+`python -m tests.kb.test_grounding` PASS。
 
 ---
 

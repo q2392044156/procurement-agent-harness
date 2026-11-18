@@ -1,6 +1,6 @@
 """MCP Server 连接测试（透传内部令牌，走真实平台）。
 
-用法：conda run -n procurement python -m pytest tests/integration/test_mcp.py -q
+用法：python -m tests.integration.manual_mcp_check
 """
 import asyncio
 import json
@@ -8,7 +8,7 @@ import os
 import sys
 
 
-from agent.env_utils import load_env
+from src.core.env import load_env
 
 load_env()
 

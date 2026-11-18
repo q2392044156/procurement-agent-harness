@@ -37,7 +37,7 @@ def _fastembed_scores(query: str, texts: list[str]) -> list[float] | None:
 
 def _llm_scores(query: str, texts: list[str]) -> list[float] | None:
     try:
-        from src.core.settings import get_llm
+        from src.core.llm import get_llm
 
         numbered = "\n".join(
             f"[{index + 1}] {text[:600]}" for index, text in enumerate(texts)

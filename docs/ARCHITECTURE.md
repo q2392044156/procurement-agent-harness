@@ -72,5 +72,7 @@ observability ◄── server.routes / mcp_server / sandbox
 
 ## 已知例外
 
-- 目前**没有**反向依赖：LLM 工厂在 `core/settings.py`，`kb/reranker.py` 直接用
-  `from src.core.settings import get_llm`，不再依赖 Agent 层。
+- 目前**没有**反向依赖：LLM 工厂在 `core/llm.py`，`kb/reranker.py` 直接用
+  `from src.core.llm import get_llm`，不再依赖 Agent 层。
+- `core` 内部：`settings.py`（库/端口/沙箱/中断策略）与 `llm.py`（模型工厂）互不依赖，
+  只共用 `core/env.py`；评审流水线的状态形状在 `agent/review/state.py`，不在 `core/contracts.py`。

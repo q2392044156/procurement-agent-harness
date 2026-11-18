@@ -127,5 +127,5 @@ def build_review_router(options):
                          min_confidence=options.get("jev_min_confidence", 0.0))
     if provider != "deepseek":
         raise ValueError("REVIEW_ROUTER_PROVIDER must be deepseek or jev")
-    from src.core.settings import get_llm
+    from src.core.llm import get_llm
     return get_llm(thinking=False, timeout=timeout, max_retries=0, max_tokens=400)

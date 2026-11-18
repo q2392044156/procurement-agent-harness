@@ -7,14 +7,14 @@ import sys
 import os
 
 
-from agent.env_utils import load_env
+from src.core.env import load_env
 load_env()
 
 
 async def test_agent_creation():
     """测试 Agent 创建"""
     print("[1] 测试 Agent 创建...")
-    from agent.schema import ProcurementContext
+    from src.core.contracts import ProcurementContext
     from src.agent.factory import create_main_agent
 
     ctx = ProcurementContext(
