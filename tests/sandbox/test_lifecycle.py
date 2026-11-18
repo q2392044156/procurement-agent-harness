@@ -24,11 +24,11 @@ from src.sandbox.holder import (
 )
 from src.sandbox.proxy import SandboxBackendProxy
 from src.core.settings import skills_store_namespace
-from src.agent.middlewares.sandbox_health import SandboxHealthMiddleware
-from src.agent.middlewares.skills_sync import SkillsSyncMiddleware
-from src.agent.middlewares.user_skills_restore import UserSkillsRestoreMiddleware
+from src.sandbox.health_middleware import SandboxHealthMiddleware
+from src.agent.skills.sync import SkillsSyncMiddleware
+from src.agent.skills.restore import UserSkillsRestoreMiddleware
 from src.infrastructure.mongo_store import MongoDBStore
-from src.agent.harness import (
+from src.agent.review.phase import (
     HarnessPhaseMiddleware,
     load_harness_config,
     should_use_grader,

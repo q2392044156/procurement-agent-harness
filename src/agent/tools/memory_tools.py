@@ -11,7 +11,7 @@ from langchain_core.tools import tool
 from src.agent.memory.config import DEFAULT_MEMORY_CONFIG
 from src.agent.memory.keeper import MemoryKeeper
 from src.agent.memory.types import EPISODIC, PROCEDURAL, SEMANTIC
-from src.agent.runtime_context import get_current_store, get_current_user_id
+from src.agent.runtime import get_current_store, get_current_user_id
 
 
 @tool

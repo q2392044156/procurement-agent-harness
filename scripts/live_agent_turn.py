@@ -16,7 +16,7 @@ load_dotenv(ROOT / ".env", override=True)
 
 from langgraph.checkpoint.memory import InMemorySaver  # noqa: E402
 
-from src.agent.main_agent import create_main_agent  # noqa: E402
+from src.agent.factory import create_main_agent  # noqa: E402
 from src.core.contracts import ProcurementContext  # noqa: E402
 
 QUERY = "请列出当前库存预警的物资，并给出补货建议"

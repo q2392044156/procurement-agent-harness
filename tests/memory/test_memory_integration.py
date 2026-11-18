@@ -14,9 +14,9 @@ from tests.support.fakes import FakeStore, Msg
 from src.agent.memory.keeper import MemoryKeeper
 from src.agent.memory.extractor import extract_preferences
 from src.agent.memory.config import MemoryConfig
-from src.agent.middlewares.memory_consolidation import MemoryConsolidationMiddleware
-from src.agent.middlewares.memory_update import MemoryUpdateMiddleware
-from src.agent.middlewares.warm_memory import WarmMemoryMiddleware, WARM_MEMORY_SLOT
+from src.agent.memory.middlewares.consolidation import MemoryConsolidationMiddleware
+from src.agent.memory.middlewares.update import MemoryUpdateMiddleware
+from src.agent.memory.middlewares.warm import WarmMemoryMiddleware, WARM_MEMORY_SLOT
 
 
 class Capture(AgentMiddleware):

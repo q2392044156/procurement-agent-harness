@@ -13,7 +13,7 @@ from langchain_core.language_models.fake_chat_models import FakeMessagesListChat
 from langchain.agents import create_agent
 from langgraph.store.memory import InMemoryStore
 
-from src.agent.progressive_skills import (
+from src.agent.skills.catalog import (
     SkillCatalog, ProgressiveSkillsMiddleware, attach_to_subagents, SLOT,
     safe_relative, metadata, CATALOG_LIMIT, DOCUMENT_LIMIT,
 )

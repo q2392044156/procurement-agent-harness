@@ -5,7 +5,7 @@ import logging
 import subprocess
 from pathlib import Path
 
-from src.agent.progressive_skills import SkillCatalog
+from src.agent.skills.catalog import SkillCatalog
 
 
 def main():

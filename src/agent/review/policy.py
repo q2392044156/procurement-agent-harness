@@ -71,7 +71,7 @@ class ReviewPolicy:
         self.model = model
 
     def rule(self, state):
-        from src.agent.harness import latest_human_text, detect_task_type, should_use_grader
+        from src.agent.review.phase import latest_human_text, detect_task_type, should_use_grader
         messages = state.get("messages", [])
         text = latest_human_text(messages)
         options = self.config.get("review", {})

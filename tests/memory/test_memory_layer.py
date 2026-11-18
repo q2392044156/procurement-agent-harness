@@ -556,8 +556,8 @@ def test_middleware_smoke():
         print("    [skip] langchain 不可用")
         return
 
-    from src.agent.middlewares.memory_consolidation import MemoryConsolidationMiddleware
-    from src.agent.middlewares.memory_update import MemoryUpdateMiddleware
+    from src.agent.memory.middlewares.consolidation import MemoryConsolidationMiddleware
+    from src.agent.memory.middlewares.update import MemoryUpdateMiddleware
 
     store = FakeStore()
     messages = [
@@ -594,8 +594,8 @@ def test_middleware_handles_empty_and_broken_state():
         print("    [skip] langchain 不可用")
         return
 
-    from src.agent.middlewares.memory_consolidation import MemoryConsolidationMiddleware
-    from src.agent.middlewares.memory_update import MemoryUpdateMiddleware
+    from src.agent.memory.middlewares.consolidation import MemoryConsolidationMiddleware
+    from src.agent.memory.middlewares.update import MemoryUpdateMiddleware
 
     class FakeRuntime:
         config = {}

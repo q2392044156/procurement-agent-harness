@@ -12,9 +12,9 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 from deepagents.middleware.rubric import GraderResponse
 
-from src.agent.harness import HarnessPhaseMiddleware, load_harness_config
-from src.agent.review_policy import ReviewPolicy, ReviewRoute
-from src.agent.middlewares.review_gate import ReviewExecutionGate, SafeRubricMiddleware
+from src.agent.review.phase import HarnessPhaseMiddleware, load_harness_config
+from src.agent.review.policy import ReviewPolicy, ReviewRoute
+from src.agent.review.gate import ReviewExecutionGate, SafeRubricMiddleware
 
 
 class ToolModel(FakeMessagesListChatModel):

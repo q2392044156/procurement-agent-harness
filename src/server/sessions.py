@@ -129,7 +129,7 @@ class AgentLoader:
 
     def _build_agent_for_user(self, user_id: str, username: str):
         """在线程池中构建 Agent；其中包含 Docker/Mongo 同步 I/O。"""
-        from src.agent.main_agent import create_main_agent
+        from src.agent.factory import create_main_agent
 
         context = ProcurementContext(user_id=user_id, username=username)
         return create_main_agent(
