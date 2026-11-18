@@ -13,8 +13,7 @@ from pathlib import Path
 
 import httpx
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+from src.core.paths import PROJECT_ROOT as ROOT
 
 from src.observability.metrics import summarize  # noqa: E402
 from src.observability.trace import read_turns  # noqa: E402

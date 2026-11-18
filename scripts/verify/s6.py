@@ -1,18 +1,18 @@
 """S6 阶段门禁：真机评测 + 工具追踪 + 指标。
 
-1. 运行 scripts/eval_live.py（10 个真机只读场景，不经 LLM）
-2. 运行 scripts/live_agent_turn.py（真实 LLM + MCP + 记忆/技能中间件）
+1. 运行 evals/live/run.py（10 个真机只读场景，不经 LLM）
+2. 运行 scripts/dev/live_agent_turn.py（真实 LLM + MCP + 记忆/技能中间件）
 3. 汇总 logs/tool_trace.jsonl：调用数、成功率、P50/P95
 
-用法：conda run -n procurement python scripts/verify_phase_s6.py
+用法：conda run -n procurement python -m scripts.verify.s6
 """
 import json
 import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+from src.core.paths import PROJECT_ROOT as ROOT
+
 RESULTS: list[tuple[str, bool, str]] = []
 
 
@@ -22,9 +22,9 @@ def check(name: str, ok: bool, detail: str = "") -> bool:
     return ok
 
 
-def run(script: str, timeout: int = 420) -> tuple[int, str]:
+def run(module: str, timeout: int = 420) -> tuple[int, str]:
     process = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / script)],
+        [sys.executable, "-m", module],
         cwd=str(ROOT),
         capture_output=True,
         text=True,
@@ -41,7 +41,7 @@ def main() -> int:
     if trace_file.exists():
         trace_file.unlink()
 
-    code, output = run("eval_live.py", 300)
+    code, output = run("evals.live.run", 300)
     check("live tool eval", code == 0, f"exit={code}")
     summary_path = ROOT / "evals" / "live" / "summary.json"
     if summary_path.exists():
@@ -52,7 +52,7 @@ def main() -> int:
     else:
         check("live eval coverage", False, "summary.json missing")
 
-    code, output = run("live_agent_turn.py", 420)
+    code, output = run("scripts.dev.live_agent_turn", 420)
     reply_chars = 0
     for line in output.splitlines():
         if line.startswith("REPLY_CHARS:"):

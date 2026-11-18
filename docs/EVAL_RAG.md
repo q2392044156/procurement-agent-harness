@@ -26,7 +26,7 @@
 | 无关问题拒答率 | 5/5 = **100%** |
 
 - `KB_MIN_SCORE=0.40` 是在本语料上实测得到的拒答阈值：无关问题最高分 0.397，相关问题最低分 0.562，阈值取 0.40 可同时满足召回与拒答。
-- 复现命令：`conda run -n procurement python scripts/eval_rag.py`（需要 Qdrant 与已入库文档）。
+- 复现命令：`conda run -n procurement python -m evals.rag.run`（需要 Qdrant 与已入库文档）。
 
 ## 已知限制
 

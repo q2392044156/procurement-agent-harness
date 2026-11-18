@@ -22,7 +22,8 @@ import re
 import subprocess
 import sys
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
+from src.core.paths import PROJECT_ROOT as ROOT
+
 SCAN_SUFFIXES = {".py"}
 
 

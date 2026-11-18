@@ -31,7 +31,7 @@
 ## 3. 验收
 
 ```powershell
-conda run -n procurement python scripts/verify_phase_s5.py
+conda run -n procurement python -m scripts.verify.s5
 conda run -n procurement python -m tests.memory.test_memory_layer   # 34/34
 conda run -n procurement python -m pytest tests/skills/test_catalog.py -q  # 19，Windows 下符号链接用例自动跳过
 ```

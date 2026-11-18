@@ -9,7 +9,8 @@ from pathlib import Path
 from docx import Document
 from docx.shared import Pt
 
-ROOT = Path(__file__).resolve().parents[1]
+from src.core.paths import PROJECT_ROOT as ROOT
+
 OUT = ROOT / "samples" / "kb_corpus"
 
 TOPICS = [
