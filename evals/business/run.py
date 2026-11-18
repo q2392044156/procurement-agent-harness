@@ -60,10 +60,10 @@ def judge(case,erp,output,interrupts,error=None):
 
 
 async def one(case):
-    from src.agent import main_agent as main
+    from src.agent import factory as main
     from src.core.settings import get_llm
     from src.core.contracts import ProcurementContext
-    from src.agent.runtime_context import bind_runtime,reset_runtime
+    from src.agent.runtime import bind_runtime,reset_runtime
     erp=ERP(case);registry=Registry();usage=Usage();interrupts=[];error=None;output=''
     store=InMemoryStore();state={};started=time.perf_counter()
     with ExitStack() as stack:
@@ -83,7 +83,7 @@ async def one(case):
         stack.enter_context(patch.object(main,'create_deep_agent',safe_builder))
         stack.enter_context(patch('src.agent.tools.mcp_client.load_mcp_tools_sync',return_value=registry.tools))
         stack.enter_context(patch.object(main,'get_llm',lambda **kw:get_llm(**{**kw,'timeout':60,'max_retries':0})))
-        stack.enter_context(patch('src.agent.jev_router.build_review_router',lambda cfg:get_llm(thinking=False,timeout=15,max_retries=0,max_tokens=400)))
+        stack.enter_context(patch('src.agent.review.router.build_review_router',lambda cfg:get_llm(thinking=False,timeout=15,max_retries=0,max_tokens=400)))
         stack.enter_context(patch.object(main,'MAX_MODEL_CALLS',12));stack.enter_context(patch.object(main,'MAX_TOOL_CALLS',20))
         uid='eval-'+case['id'];tokens=bind_runtime(uid,store)
         try:

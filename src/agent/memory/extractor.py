@@ -53,7 +53,7 @@ _SUPPLIER_TRAILING_NOISE = "这两那的几家等了的"
 
 _SUPPLIER_TOOLS = ("supplier_query", "supplier_get", "supplier_page")
 
-# 任务类型关键词（与 harness_config.yaml 的 task_types 保持一致）
+# 任务类型关键词（与 review/rubrics.yaml 的 task_types 保持一致）
 TASK_TYPE_KEYWORDS = {
     "analysis": ("分析", "对比", "统计", "趋势", "报表", "图表", "报告", "评估"),
     "order": ("下单", "采购", "订单", "新增", "修改", "审批", "创建"),

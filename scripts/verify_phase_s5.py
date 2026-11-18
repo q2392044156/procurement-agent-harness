@@ -30,7 +30,7 @@ def check(name: str, ok: bool, detail: str = "") -> bool:
 
 def main() -> int:
     from src.agent.memory import MemoryKeeper
-    from src.agent.progressive_skills import SkillCatalog
+    from src.agent.skills.catalog import SkillCatalog
     from src.infrastructure.mongo_store import MongoDBStore
 
     uid = f"s5-gate-{uuid.uuid4().hex[:8]}"

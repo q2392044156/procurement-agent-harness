@@ -15,7 +15,7 @@ async def test_agent_creation():
     """测试 Agent 创建"""
     print("[1] 测试 Agent 创建...")
     from agent.schema import ProcurementContext
-    from agent.main_agent import create_main_agent
+    from src.agent.factory import create_main_agent
 
     ctx = ProcurementContext(
         user_id="test-e2e",

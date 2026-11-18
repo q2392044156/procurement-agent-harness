@@ -9,7 +9,7 @@ from typing import Literal
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.agent.review_policy import CHECKS, ROUTER_PROMPT, ReviewRoute
+from src.agent.review.policy import CHECKS, ROUTER_PROMPT, ReviewRoute
 
 ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 TASKS = {

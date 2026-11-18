@@ -8,9 +8,9 @@ from unittest.mock import patch
 import httpx
 from langchain_core.messages import HumanMessage
 
-from src.agent.harness import load_harness_config
-from src.agent.jev_router import JevRouter, TASKS, build_review_router
-from src.agent.review_policy import CHECKS, ReviewPolicy, ReviewRoute
+from src.agent.review.phase import load_harness_config
+from src.agent.review.router import JevRouter, TASKS, build_review_router
+from src.agent.review.policy import CHECKS, ReviewPolicy, ReviewRoute
 from evals.review_routing.run import metrics, paired
 from evals.review_routing.dataset import samples
 

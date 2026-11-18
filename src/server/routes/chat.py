@@ -92,7 +92,7 @@ async def stream_chat_response(
     # ContextVar 让图表、文档、Skill 工具在并发用户之间取到正确的稳定 Proxy。
     from src.sandbox.holder import bind_sandbox, reset_sandbox
     from src.sandbox.manager import sandbox_manager
-    from src.agent.runtime_context import bind_runtime, reset_runtime
+    from src.agent.runtime import bind_runtime, reset_runtime
 
     await session.run_lock.acquire()
     lease_acquired = sandbox_manager.acquire_lease(user_id)

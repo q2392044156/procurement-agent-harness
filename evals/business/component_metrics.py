@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from langchain_core.messages import SystemMessage
 from tests.support.fakes import FakeStore
 from src.agent.memory.keeper import MemoryKeeper
-from src.agent.middlewares.warm_memory import WarmMemoryMiddleware, WARM_MEMORY_SLOT
+from src.agent.memory.middlewares.warm import WarmMemoryMiddleware, WARM_MEMORY_SLOT
 
 
 def main():

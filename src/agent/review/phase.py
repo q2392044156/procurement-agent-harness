@@ -3,7 +3,7 @@ Harness 编排模块（真 Harness 架构核心）
 
 职责：
 1. HarnessPhaseState — 扩展 LangGraph 状态（phase / plan / review_result）
-2. load_harness_config — 加载声明式 DSL 配置（harness_config.yaml）
+2. load_harness_config — 加载声明式 DSL 配置（rubrics.yaml）
 3. build_rubric / detect_task_type — 按任务类型生成评审标准
 4. HarnessPhaseMiddleware — 阶段状态机 + rubric 注入
 
@@ -30,7 +30,7 @@ from src.core.contracts import Phase, ReviewResult, Plan, PlanStep
 from src.core.logging import agent_logger
 
 # DSL 配置文件路径
-HARNESS_CONFIG_PATH = Path(__file__).parent / "harness_config.yaml"
+HARNESS_CONFIG_PATH = Path(__file__).parent / "rubrics.yaml"
 
 
 class HarnessPhaseState(AgentState):
@@ -70,7 +70,7 @@ def load_harness_config(config_path: Path | None = None) -> dict[str, Any]:
     """加载 Harness DSL 配置。
 
     Args:
-        config_path: 配置文件路径，默认使用模块目录下的 harness_config.yaml。
+        config_path: 配置文件路径，默认使用模块目录下的 rubrics.yaml。
 
     Returns:
         配置字典。文件缺失或解析失败时回退到 _DEFAULT_CONFIG（保证降级可用）。
@@ -267,7 +267,7 @@ class HarnessPhaseMiddleware(AgentMiddleware):
 
     def __init__(self, config_path: Path | None = None, router_model=None):
         self._config = load_harness_config(config_path)
-        from src.agent.review_policy import ReviewPolicy
+        from src.agent.review.policy import ReviewPolicy
         self._review_policy = ReviewPolicy(self._config, router_model)
         self.tools = []
 

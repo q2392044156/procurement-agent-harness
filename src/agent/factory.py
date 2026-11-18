@@ -1,14 +1,11 @@
-"""
-主入口：create_main_agent() + precompute_agent_context()
-DeepAgent 核心组装 — 严格遵循 Harness Engineering 架构
-"""
-import io
-import tarfile
-import fnmatch
-from typing import Optional
-from pathlib import Path
+"""主 Agent 组装：create_main_agent() + precompute_agent_context()。
 
-from deepagents import create_deep_agent, RubricMiddleware
+依赖方向固定为 core / sandbox / mcp_server 工具 → agent 装配，本模块只做编排，
+不实现领域规则：LLM、后端、工具、子 Agent、中间件栈、系统提示词。
+"""
+from typing import Optional
+
+from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend, StoreBackend, LocalShellBackend
 from langchain.agents.middleware import (
     ModelCallLimitMiddleware,
@@ -16,123 +13,21 @@ from langchain.agents.middleware import (
     HumanInTheLoopMiddleware,
 )
 
-from src.core.paths import PROJECT_ROOT, PROMPTS_DIR, SKILLS_DIR
-from src.core.settings import get_llm, INTERRUPT_ON_TOOLS, skills_store_namespace, MAX_MODEL_CALLS, MAX_TOOL_CALLS, SANDBOX_HEALTH_CHECK_INTERVAL_SECONDS
+from src.core.paths import PROMPTS_DIR, SKILLS_DIR
+from src.core.settings import (
+    get_llm,
+    INTERRUPT_ON_TOOLS,
+    skills_store_namespace,
+    MAX_MODEL_CALLS,
+    MAX_TOOL_CALLS,
+    SANDBOX_HEALTH_CHECK_INTERVAL_SECONDS,
+)
 from src.core.contracts import ProcurementContext
 from src.core.logging import agent_logger
+from src.agent.bootstrap import bootstrap_sandbox
 from src.agent.memory.config import DEFAULT_MEMORY_CONFIG
 from src.agent.memory.keeper import MemoryKeeper
 from src.agent.prompts.main import MAIN_SYSTEM_PROMPT, MEMORY_USAGE_PROMPT
-
-# 项目内其它目录
-MEMORY_DIR = Path(__file__).parent / "memory"
-
-
-def _upload_project_to_sandbox(sandbox) -> bool:
-    """
-    将项目文件上传到沙箱 /workspace/src/ 目录，搭建 1:1 开发环境。
-    跳过 node_modules / .git / __pycache__ / .next 等无关目录。
-    """
-    skip_patterns = [
-        ".git", "__pycache__", "node_modules", ".next", ".venv",
-        ".env", ".env.*", "*.pem", "*.key",
-        ".eggs", "*.pyc", "*.pyo", ".DS_Store", ".docker",
-        "*.png", "*.jpg", "*.jpeg", "*.gif",  # 生成物不传
-    ]
-
-    def _should_skip(rel_path: str) -> bool:
-        for pattern in skip_patterns:
-            if fnmatch.fnmatch(rel_path, pattern):
-                return True
-            parts = rel_path.replace("\\", "/").split("/")
-            for part in parts:
-                if fnmatch.fnmatch(part, pattern):
-                    return True
-        return False
-
-    remote_dir = "/workspace/src"
-    try:
-        sandbox.execute(f"mkdir -p '{remote_dir}'")
-
-        tar_stream = io.BytesIO()
-        with tarfile.open(fileobj=tar_stream, mode="w:gz") as tar:
-            for file_path in sorted(PROJECT_ROOT.rglob("*")):
-                if not file_path.is_file():
-                    continue
-                rel = str(file_path.relative_to(PROJECT_ROOT)).replace("\\", "/")
-                if _should_skip(rel):
-                    continue
-                tar.add(str(file_path), arcname=rel)
-
-        tar_stream.seek(0)
-        data = tar_stream.read()
-
-        # 仅使用 BaseSandbox 的公开协议上传；这样 SandboxBackendProxy 热替换
-        # 底层容器后，项目上传仍能工作，且不会依赖 Docker 私有 _container。
-        archive_path = "/tmp/erp-agent-project.tar.gz"
-        responses = sandbox.upload_files([(archive_path, data)])
-        errors = [getattr(item, "error", None) for item in responses]
-        if not responses or any(errors):
-            raise RuntimeError(f"archive upload failed: {errors or 'no response'}")
-
-        unpack = sandbox.execute(
-            f"tar -xzf '{archive_path}' -C '{remote_dir}' && rm -f '{archive_path}'"
-        )
-        if unpack.exit_code != 0:
-            raise RuntimeError(f"archive extraction failed: {unpack.output}")
-
-        # 获取文件数量和总大小
-        count_result = sandbox.execute(
-            f"find {remote_dir} -type f 2>/dev/null | wc -l"
-        )
-        size_result = sandbox.execute(
-            f"du -sh {remote_dir} 2>/dev/null | cut -f1"
-        )
-        file_count = count_result.output.strip() if count_result.exit_code == 0 else "?"
-        total_size = size_result.output.strip() if size_result.exit_code == 0 else "?"
-
-        agent_logger.info(
-            f"Project uploaded to sandbox: {remote_dir} "
-            f"({file_count} files, {total_size})"
-        )
-        return True
-    except Exception as e:
-        agent_logger.warning(f"Project upload to sandbox failed (non-fatal): {e}")
-        return False
-
-
-def bootstrap_sandbox(sandbox) -> None:
-    """填充一个新领取或重建后的沙箱，使其可立即继续 Agent 工作。
-
-    这个函数只使用稳定 Proxy 暴露的公开能力，因此健康检查重建后的同一个
-    Agent、CompositeBackend 和工具对象都能继续复用。
-    """
-    setup = sandbox.execute(
-        "mkdir -p /workspace/charts /workspace/output /workspace/data "
-        "/workspace/python-packages /skills"
-    )
-    if setup.exit_code != 0:
-        raise RuntimeError(f"sandbox directory setup failed: {setup.output}")
-
-    if not _upload_project_to_sandbox(sandbox):
-        raise RuntimeError("project bootstrap upload failed")
-
-    skills_copy = sandbox.execute(
-        "mkdir -p /skills && "
-        "cp -r /workspace/src/skills/. /skills/ 2>/dev/null || true"
-    )
-    if skills_copy.exit_code != 0:
-        raise RuntimeError(f"core Skills bootstrap failed: {skills_copy.output}")
-
-    agent_logger.info("Sandbox bootstrap complete: project + core Skills restored")
-
-
-def _load_skills_prompt(skills_dir: Path) -> str:
-    """
-    兼容入口：仅返回基础技能元数据，不读取正文注入提示词。
-    """
-    from src.agent.progressive_skills import SkillCatalog
-    return SkillCatalog(skills_dir).index()
 
 
 async def precompute_agent_context(
@@ -277,7 +172,7 @@ def create_main_agent(
     all_tools = mcp_tools + custom_tools
 
     # Prompt disclosure is independent from physical sandbox file synchronization.
-    from src.agent.progressive_skills import SkillCatalog, ProgressiveSkillsMiddleware, attach_to_subagents, SLOT
+    from src.agent.skills.catalog import SkillCatalog, ProgressiveSkillsMiddleware, attach_to_subagents, SLOT
     skill_catalog = SkillCatalog(SKILLS_DIR, store=store, user_id=user_context.user_id,
                                  sandbox=managed_sandbox)
     skill_read_tools = skill_catalog.tools()
@@ -298,24 +193,25 @@ def create_main_agent(
 
     # ===== 5. 组装中间件栈 =====
     # 自定义中间件
-    from src.agent.middlewares.sandbox_health import SandboxHealthMiddleware
-    from src.agent.middlewares.skills_sync import SkillsSyncMiddleware
-    from src.agent.middlewares.user_skills_restore import UserSkillsRestoreMiddleware
+    from src.sandbox.health_middleware import SandboxHealthMiddleware
+    from src.agent.skills.sync import SkillsSyncMiddleware
+    from src.agent.skills.restore import UserSkillsRestoreMiddleware
     from src.agent.middlewares.tools_summarization import ToolsSummarizationMiddleware
-    from src.agent.middlewares.memory_update import MemoryUpdateMiddleware
-    from src.agent.middlewares.memory_consolidation import MemoryConsolidationMiddleware
-    from src.agent.middlewares.warm_memory import WarmMemoryMiddleware, WARM_MEMORY_SLOT
-    from src.agent.middlewares.sandbox_breaker import SandboxCircuitBreakerMiddleware
+    from src.agent.memory.middlewares.update import MemoryUpdateMiddleware
+    from src.agent.memory.middlewares.consolidation import MemoryConsolidationMiddleware
+    from src.agent.memory.middlewares.warm import WarmMemoryMiddleware, WARM_MEMORY_SLOT
+    from src.sandbox.breaker_middleware import SandboxCircuitBreakerMiddleware
     from src.agent.middlewares.model_usage import ModelUsageMiddleware
+
     # Harness 阶段状态机 + 评审器（真 Harness 架构核心）
-    from src.agent.harness import HarnessPhaseMiddleware, load_harness_config
-    from src.agent.middlewares.review_gate import ReviewExecutionGate, SafeRubricMiddleware
+    from src.agent.review.phase import HarnessPhaseMiddleware, load_harness_config
+    from src.agent.review.gate import ReviewExecutionGate, SafeRubricMiddleware
 
     # 读取 Harness DSL 配置中的评审迭代上限
     _harness_config = load_harness_config()
     _review_cfg = _harness_config.get("review", {}) if isinstance(_harness_config, dict) else {}
     _review_max_iterations = _review_cfg.get("max_iterations", 3)
-    from src.agent.jev_router import build_review_router
+    from src.agent.review.router import build_review_router
     router_llm = build_review_router(_review_cfg)
 
     # 注意：create_deep_agent 内部已自动添加：
