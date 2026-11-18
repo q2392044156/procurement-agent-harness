@@ -140,9 +140,12 @@ class CustomOpenSandbox(BaseSandbox):
 
             output = "\n".join(output_parts) if output_parts else ""
 
-            # 截断过长输出
+            # 截断过长输出。上限不能太小：deepagents 的 read/ls/edit 走的是
+            # 「bash 脚本输出 JSON」协议（deepagents/backends/sandbox.py），
+            # 100k 时读大文件会把 JSON 切在半截、解析失败后报
+            # "unexpected server response: {...}"。
             truncated = False
-            max_bytes = 100_000
+            max_bytes = 1_000_000
             if len(output) > max_bytes:
                 output = output[:max_bytes] + "\n... [output truncated]"
                 truncated = True
@@ -172,29 +175,15 @@ class CustomOpenSandbox(BaseSandbox):
         return resp.output
 
     def read_file_bytes(self, path: str) -> bytes:
-        """读取沙箱内文件内容（二进制，base64 传输）"""
-        resp = self.execute(f"base64 '{path}'")
-        if resp.exit_code != 0:
-            raise FileNotFoundError(f"Cannot read file: {path} — {resp.output}")
-        return base64.b64decode(resp.output.strip())
+        """读取沙箱内文件内容（二进制，base64 分块传输）"""
+        return self._read_bytes_via_exec(path)
 
     def write_file(self, path: str, content: str | bytes) -> str:
         """写入内容到沙箱内文件（自动创建父目录）"""
-        # 确保父目录存在
-        dir_path = "/".join(path.rstrip("/").split("/")[:-1]) or "/"
-        self.execute(f"mkdir -p '{dir_path}'")
-
-        if isinstance(content, str):
-            # 文本写入：base64 编码避免 shell 转义问题
-            encoded = base64.b64encode(content.encode("utf-8")).decode("ascii")
-            resp = self.execute(f"echo '{encoded}' | base64 -d > '{path}'")
-        else:
-            # 二进制写入
-            encoded = base64.b64encode(content).decode("ascii")
-            resp = self.execute(f"echo '{encoded}' | base64 -d > '{path}'")
-
-        if resp.exit_code != 0:
-            raise IOError(f"Cannot write file: {path} — {resp.output}")
+        payload = content.encode("utf-8") if isinstance(content, str) else content
+        # 统一走分块写入：既能绕过 shell 单条命令的长度限制，也能在只读 rootfs
+        # （put_archive 被拒）的场景下工作。
+        self._write_bytes_via_exec(path, payload)
         return f"OK: {path}"
 
     def list_dir(self, path: str = ".") -> list[str]:
@@ -344,16 +333,14 @@ class CustomOpenSandbox(BaseSandbox):
     # ============================================================
 
     def download_files(self, paths: list[str]) -> list[FileDownloadResponse]:
-        """从容器中下载文件（base64 传输）"""
+        """从容器中下载文件（base64 分块传输）"""
         results = []
         for path in paths:
             try:
-                resp = self.execute(f"base64 '{path}'")
-                if resp.exit_code == 0 and resp.output.strip():
-                    content = base64.b64decode(resp.output.strip())
-                    results.append(FileDownloadResponse(path=path, content=content, error=None))
-                else:
-                    results.append(FileDownloadResponse(path=path, content=None, error="file_not_found"))
+                content = self._read_bytes_via_exec(path)
+                results.append(FileDownloadResponse(path=path, content=content, error=None))
+            except FileNotFoundError:
+                results.append(FileDownloadResponse(path=path, content=None, error="file_not_found"))
             except Exception as e:
                 results.append(FileDownloadResponse(path=path, content=None, error=str(e)))
         return results
@@ -369,10 +356,55 @@ class CustomOpenSandbox(BaseSandbox):
         except Exception as e:
             return f"Download failed: {e}"
 
+    def _read_bytes_via_exec(self, path: str, chunk_size: int = 48 * 1024) -> bytes:
+        """分块读出沙箱内的二进制文件。
+
+        ``execute`` 会把超过 100k 字符的输出截断，直接 ``base64 file`` 读取大文件
+        （例如 70KB 的 PNG → 97KB base64）会得到半截编码，解码时报
+        "Invalid base64-encoded string: number of data characters ... cannot be
+        1 more than a multiple of 4"。因此按固定大小切片读取再拼接。
+        """
+        stat = self.execute(f"stat -c %s '{path}' 2>/dev/null")
+        raw = stat.output.strip().splitlines()
+        if stat.exit_code != 0 or not raw or not raw[-1].isdigit():
+            raise FileNotFoundError(f"Cannot read file: {path} — {stat.output.strip()[:200]}")
+        size = int(raw[-1])
+
+        chunks: list[bytes] = []
+        for offset in range(0, size, chunk_size):
+            resp = self.execute(
+                f"dd if='{path}' bs={chunk_size} skip={offset // chunk_size} count=1 2>/dev/null "
+                "| base64 -w0"
+            )
+            payload = resp.output.strip()
+            if resp.exit_code != 0 or not payload:
+                raise IOError(f"Cannot read file chunk at {offset}: {path}")
+            chunks.append(base64.b64decode(payload))
+        return b"".join(chunks)
+
+    def _write_bytes_via_exec(self, path: str, content: bytes, chunk_size: int = 48 * 1024) -> None:
+        """通过 exec + base64 分块写入二进制文件。
+
+        为什么需要它：容器以 ``read_only=True`` 创建时，Docker Engine 会直接拒绝
+        ``PUT /containers/{id}/archive``（"container rootfs is marked read-only"），
+        连挂载为 tmpfs 的 /workspace 也不放行。写入只能走 exec（tmpfs 可写），
+        这也让"只读 rootfs + 可写 tmpfs"的安全设计得以保留。
+        """
+        dir_path = "/".join(path.rstrip("/").split("/")[:-1]) or "/"
+        self.execute(f"mkdir -p '{dir_path}'")
+        if self.execute(f": > '{path}'").exit_code != 0:
+            raise IOError(f"Cannot create file: {path}")
+        for offset in range(0, len(content), chunk_size):
+            piece = base64.b64encode(content[offset:offset + chunk_size]).decode("ascii")
+            resp = self.execute(f"printf '%s' '{piece}' | base64 -d >> '{path}'")
+            if resp.exit_code != 0:
+                raise IOError(f"Cannot write file: {path} — {resp.output}")
+
     def upload_files(self, files: list[tuple[str, bytes]]) -> list[FileUploadResponse]:
-        """上传文件到容器（tar 流方式）"""
+        """上传文件到容器：优先 tar 流，只读 rootfs 场景回退到 exec 分块写入。"""
         results = []
         for path, content in files:
+            error = None
             try:
                 dir_name = "/".join(path.rstrip("/").split("/")[:-1]) or "/"
                 file_name = path.split("/")[-1]
@@ -385,9 +417,12 @@ class CustomOpenSandbox(BaseSandbox):
                 tar_stream.seek(0)
 
                 self._container.put_archive(dir_name, tar_stream.read())
-                results.append(FileUploadResponse(path=path, error=None))
-            except Exception as e:
-                results.append(FileUploadResponse(path=path, error=str(e)))
+            except Exception as exc:  # noqa: BLE001 - 只读 rootfs 时退化为 exec 写入
+                try:
+                    self._write_bytes_via_exec(path, content)
+                except Exception as fallback_exc:  # noqa: BLE001
+                    error = f"{exc}; exec fallback failed: {fallback_exc}"
+            results.append(FileUploadResponse(path=path, error=error))
         return results
 
     def upload_directory(self, local_dir: str, remote_dir: str) -> str:
@@ -404,7 +439,18 @@ class CustomOpenSandbox(BaseSandbox):
 
         try:
             self.execute(f"mkdir -p '{remote_dir}'")
-            self._container.put_archive(remote_dir, tar_stream.read())
+            try:
+                self._container.put_archive(remote_dir, tar_stream.read())
+            except Exception:  # noqa: BLE001 - 只读 rootfs 时按文件逐个 exec 写入
+                with tarfile.open(fileobj=io.BytesIO(tar_stream.getvalue()), mode="r:gz") as tar:
+                    for member in tar.getmembers():
+                        if not member.isfile():
+                            continue
+                        handle = tar.extractfile(member)
+                        if handle is None:
+                            continue
+                        rel = member.name.lstrip("./")
+                        self._write_bytes_via_exec(f"{remote_dir.rstrip('/')}/{rel}", handle.read())
             return f"OK: uploaded {local_dir} -> {remote_dir}"
         except Exception as e:
             return f"Upload directory failed: {e}"

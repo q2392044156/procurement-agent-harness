@@ -130,3 +130,10 @@ class JevTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ModelProfileTests(unittest.TestCase):
+    def test_deepseek_model_opts_out_of_json_schema(self):
+        from src.core.llm import DeepSeekChatModel
+        model = DeepSeekChatModel(model="deepseek-flash", api_key="offline", base_url="https://api.deepseek.com")
+        self.assertFalse(model.profile.get("structured_output"))

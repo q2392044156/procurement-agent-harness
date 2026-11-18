@@ -24,6 +24,17 @@ from src.observability.trace import finish_trace, reset_trace, start_trace
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
+# 评审 grader 的结构化输出走工具调用（langchain ToolStrategy），属于内部机制，
+# 不能作为业务工具事件出现在前端。
+_INTERNAL_TOOL_NAMES = frozenset({"GraderResponse"})
+
+
+def _is_internal_tool(namespace, name: str | None = None) -> bool:
+    """判断是否是内部（评审/路由）产生的工具事件。"""
+    if name and name in _INTERNAL_TOOL_NAMES:
+        return True
+    return any("rubric_grader" in str(part) for part in (namespace or ()))
+
 
 def sse_event(event: str, data: dict) -> str:
     """格式化 SSE 事件（严格遵循 event:/data: 协议）"""
@@ -267,6 +278,8 @@ async def stream_chat_response(
                         thinking_emitted = True
                     for tc in tool_call_chunks:
                         if isinstance(tc, dict):
+                            if _is_internal_tool(namespace, tc.get("name")):
+                                continue
                             if tc.get("name"):
                                 tool_calls_buffer.append({
                                     "id": tc.get("id", str(uuid.uuid4())),
@@ -288,6 +301,8 @@ async def stream_chat_response(
                 # ToolMessage → tool_result / tool_end
                 if token_type == "tool":
                     tool_name = getattr(token, "name", "unknown")
+                    if _is_internal_tool(namespace, tool_name):
+                        continue
                     tool_content = content if isinstance(content, str) else str(content)
                     if tool_name == "kb_search":
                         kb_searched = True

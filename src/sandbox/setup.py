@@ -42,6 +42,11 @@ class SandboxConfig:
     cpu_limit: float = 1.0
     network_mode: str = "bridge"          # "none" = 完全隔离, "bridge" = 受限
     tmpfs_size: str = "128m"
+    # /workspace 是用户数据落盘区（上传的项目、生成的图表与文档）。
+    # 256m 在装依赖/导出大文件时会被打满，这里放宽到 1g。
+    workspace_size: str = "1g"
+    # /workspace/python-packages 单独挂载：必须带 exec（C 扩展要 mmap 可执行段）
+    packages_size: str = "512m"
     drop_all_caps: bool = True
     use_seccomp: bool = True
     seccomp_path: str = ""                # 空则使用内置 seccomp.json
@@ -59,6 +64,36 @@ class SandboxConfig:
 # ============================================================
 
 _BUILTIN_SECCOMP = str(Path(__file__).parent / "seccomp.json")
+
+# 沙箱镜像缺失时的兜底：没有预装依赖，但容器仍可用（不会退化成 LocalShell）
+_FALLBACK_IMAGE = "python:3.11-slim"
+
+
+def _ensure_image(client, image: str) -> str:
+    """确保镜像可用；缺失时尝试拉取，仍失败则退回基础 Python 镜像。
+
+    预装的 matplotlib/numpy/pandas 依赖 ``procuremind-sandbox`` 镜像；
+    镜像没构建时宁可退化（图表工具报错），也不让整个沙箱链路失败。
+    """
+    try:
+        client.images.get(image)
+        return image
+    except docker.errors.ImageNotFound:
+        pass
+    except Exception as e:  # Docker daemon 抖动时不要在这里崩
+        sandbox_logger.warning(f"Image lookup failed for {image}: {e}")
+        return image
+
+    try:
+        sandbox_logger.info(f"Pulling sandbox image: {image}")
+        client.images.pull(image)
+        return image
+    except Exception as e:
+        sandbox_logger.warning(
+            f"Sandbox image '{image}' unavailable ({e}); falling back to {_FALLBACK_IMAGE}. "
+            "图表能力需要先构建镜像：docker build -t procuremind-sandbox:latest docker/sandbox"
+        )
+        return _FALLBACK_IMAGE
 
 
 # ============================================================
@@ -92,6 +127,9 @@ def create_secure_sandbox(config: SandboxConfig | None = None) -> CustomOpenSand
 
     client = docker.from_env()
 
+    # 镜像可用性（预装依赖的沙箱镜像缺失时退回基础镜像，而不是让整条链路失败）
+    config.image = _ensure_image(client, config.image)
+
     # 检查容器是否已存在，存在则先移除
     try:
         existing = client.containers.get(config.name)
@@ -109,7 +147,11 @@ def create_secure_sandbox(config: SandboxConfig | None = None) -> CustomOpenSand
         "pids_limit": 256,
         "tmpfs": {
             "/tmp": f"rw,noexec,nosuid,size={config.tmpfs_size}",
-            "/workspace": f"rw,noexec,nosuid,size=256m",
+            "/workspace": f"rw,noexec,nosuid,size={config.workspace_size}",
+            # pip --target 装进来的包必须能 mmap 可执行段，否则 numpy/pandas
+            # 这类 C 扩展会报 "failed to map segment from shared object"。
+            # 单独挂一个可执行的小分区，用户产物区继续禁执行。
+            "/workspace/python-packages": f"rw,nosuid,nodev,size={config.packages_size}",
             # ``--read-only`` 会让根目录下的 /skills 不可写；Skills 同步、
             # 用户 Skills 恢复都必须在独立的可写挂载点完成。
             "/skills": "rw,nosuid,nodev,size=128m",
@@ -142,6 +184,9 @@ def create_secure_sandbox(config: SandboxConfig | None = None) -> CustomOpenSand
         # 根文件系统保持只读时，第三方依赖安装到工作区而非 /usr/local。
         "PIP_TARGET": "/workspace/python-packages",
         "PYTHONPATH": "/workspace/python-packages",
+        # 只读 rootfs 下 matplotlib 默认缓存目录 /root/.config 不可写，
+        # 不指定会让每次导入都重建字体缓存。
+        "MPLCONFIGDIR": "/workspace/.mplconfig",
     }
     environment.update(config.env_vars)
 
@@ -242,6 +287,12 @@ def _init_python_runtime(sandbox: CustomOpenSandbox):
     else:
         sandbox_logger.warning("Python not available in sandbox")
 
+    # 镜像里已经预装（procuremind-sandbox）时直接跳过，避免每次建容器都装一遍。
+    probe = sandbox.execute("python3 -c 'import matplotlib, numpy, pandas' 2>&1")
+    if probe.exit_code == 0:
+        sandbox_logger.info("Python packages already available: matplotlib, numpy, pandas")
+        return
+
     # 安装常用数据分析包
     resp = sandbox.execute(
         "mkdir -p /workspace/python-packages && "
@@ -250,6 +301,8 @@ def _init_python_runtime(sandbox: CustomOpenSandbox):
     )
     if resp.exit_code == 0:
         sandbox_logger.info("Python packages installed: matplotlib, pandas, numpy")
+    else:
+        sandbox_logger.warning(f"Python packages install failed: {resp.output.strip()[:200]}")
 
 
 def _init_go_runtime(sandbox: CustomOpenSandbox):

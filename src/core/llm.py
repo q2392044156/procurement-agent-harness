@@ -22,8 +22,25 @@ DEEPSEEK_TRACKING_ID = get_env("DEEPSEEK_TRACKING_ID", "")
 DEEPSEEK_TRACKING_HEADER = get_env("DEEPSEEK_TRACKING_HEADER", "")
 
 
+class DeepSeekChatModel(ChatDeepSeek):
+    """DeepSeek 聊天模型：不声明 json_schema 结构化输出能力。
+
+    DeepSeek 兼容接口不支持 ``response_format={"type": "json_schema"}``，会返回
+    400 "This response_format type is unavailable now"。langchain 依据模型的
+    ``profile["structured_output"]`` 决定是否使用 ProviderStrategy（即 json_schema），
+    这里显式置为 False，让需要结构化输出的内部组件（评审 grader）退回
+    ToolStrategy（函数调用），DeepSeek 支持这条路径。
+    """
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        profile = dict(getattr(self, "profile", None) or {})
+        profile["structured_output"] = False
+        self.profile = profile
+
+
 def get_llm(*, thinking: bool | None = None, timeout: float | None = None,
-            max_retries: int = 2, max_tokens: int = LLM_MAX_TOKENS) -> ChatDeepSeek:
+            max_retries: int = 2, max_tokens: int = LLM_MAX_TOKENS) -> DeepSeekChatModel:
     """获取 DeepSeek 模型实例。
 
     主 Agent 使用思考模式；需要强制结构化输出的内部评审器使用
@@ -47,12 +64,12 @@ def get_llm(*, thinking: bool | None = None, timeout: float | None = None,
     if timeout is not None:
         common_kwargs["timeout"] = timeout
     if thinking:
-        return ChatDeepSeek(
+        return DeepSeekChatModel(
             **common_kwargs,
             reasoning_effort=LLM_REASONING_EFFORT,
             extra_body={"thinking": {"type": "enabled"}},
         )
-    return ChatDeepSeek(
+    return DeepSeekChatModel(
         **common_kwargs,
         temperature=LLM_TEMPERATURE,
         extra_body={"thinking": {"type": "disabled"}},

@@ -489,6 +489,60 @@ markers = ["live: 需要真实 LLM / 平台 / Docker"]
 
 ---
 
+## 7. 重构后联调与回归（P5 之后，2026-11-19）
+
+重构分支 `refactor/tree` 与平台（`smart-procurement-platform`）联调，全栈由
+平台 `scripts/demo-up.ps1 -Agent` 拉起（backend 8080 / agent 8000 / mcp 8001 /
+frontend 3000 / qdrant 6333）。
+
+| 验证项 | 命令 | 结果 |
+|---|---|---|
+| 语法 | `python -m compileall -q src tests scripts evals` | exit 0 |
+| 导入 | `python -m scripts.dev.check_imports` | `ok=130 fail=0`；`unresolved=0` |
+| 单测 | `python -m pytest tests -q` | **120 passed, 17 subtests passed** |
+| 镜像 | `docker compose --profile agent build agent` | 构建成功，镜像内 `import src.agent.factory / src.server.main / src.mcp_server.server_main` 全通 |
+| MCP | `python -m tests.integration.manual_mcp_check` | 52 个工具，3 个只读用例 `code=0` |
+| SSE | `python -m scripts.smoke.sse_smoke` | PASS（simple / HITL approve / HITL reject） |
+| 平台代理 | `python -m scripts.smoke.platform_proxy_smoke` | PASS |
+| 端到端 | `python -m scripts.smoke.platform_integration_smoke` | **13/13 PASS**（含 HITL 建单、KB 引用、历史、观测） |
+
+期间定位并修掉 6 个**改造前既有**的缺陷（都不是重构引入，但都只有在真容器联调时才暴露）：
+
+1. **只读 rootfs 让 `put_archive` 必然 400** → 项目上传失败 → 沙箱回退 `LocalShell`
+   （图表/文档工具在平台里全不可用）。Docker API 1.56 对 `ReadonlyRootfs=true` 的容器
+   一律拒绝 archive 上传，连 tmpfs 挂载点也不例外。修复：`src/sandbox/opensandbox.py`
+   增加 `_write_bytes_via_exec()`（`base64 -d` 分块写入），`upload_files` /
+   `upload_directory` 在上传出错时回退到它，保留「只读 rootfs + 可写 tmpfs」的安全设计。
+2. **DeepSeek 不支持 `response_format=json_schema`** → 评审 grader 每轮 400 并静默降级。
+   根因是 langchain 依据 `model.profile["structured_output"]` 选择 `ProviderStrategy`。
+   修复：`src/core/llm.py` 的 `DeepSeekChatModel` 显式置该能力位为 False，退回
+   `ToolStrategy`；`src/agent/review/policy.py` 的模型路由同时改成
+   `JsonOutputParser`（`_RouteChain`），不再依赖 `with_structured_output`。
+3. **grader 内部工具泄漏到前端 SSE**：只读问答里出现 `GraderResponse` 工具事件。
+   修复：`src/server/routes/chat.py` 增加 `_INTERNAL_TOOL_NAMES` / `_is_internal_tool()` 过滤。
+4. **图表链路不可用（三重原因）**：沙箱 `runtimes=[]` 从不装 matplotlib；`/workspace`
+   tmpfs 只有 256m（`pip install` 报 `No space left on device`）；`/workspace` 带 `noexec`
+   导致 C 扩展 mmap 失败。修复：新增 `docker/sandbox/Dockerfile`（预装
+   matplotlib/numpy/pandas + `fonts-noto-cjk`，默认 `SANDBOX_IMAGE=procuremind-sandbox:latest`），
+   `/workspace` 提到 1g 并单独挂 `rw`（非 noexec）的 `/workspace/python-packages`，
+   `_ensure_image()` 在镜像缺失时回退基础镜像，`charts.py` 改为按实际可用字体挑选（CJK 标题不再方块）。
+5. **超过 100k 的输出被截断**：`execute()` 的 `max_bytes=100_000` 会把 `base64` 读取的大文件
+   和 deepagents `read` 的 JSON 协议切半（`Invalid base64-encoded string` /
+   `unexpected server response: {...}`）。修复：新增 `_read_bytes_via_exec()` 分块读，
+   `read_file_bytes`/`download_files`/`write_file` 全部改走它；`execute()` 上限提到 1 MB。
+6. **`download_sandbox_file` 找错容器**：它扫「第一个以 `erp-sandbox-` 开头的运行中容器」，
+   多用户/预热池下会读到别人的沙箱，于是「文件不存在」。修复：改用请求绑定的
+   `src.sandbox.holder.get_sandbox(user_id)`。
+
+顺带修 `scripts/dev/{build-images,reset_demo}.ps1` 的路径上溯（P4f 挪目录后少退一级），
+并让 `build-images.ps1` 一并构建沙箱镜像。
+
+**保留的已知小问题**：`/app/data/download` 里的文件名沿用沙箱内的中文名，下载链接需 URL 编码；
+`SandboxManager.prune_stale_containers()` 只清「配置过期」的容器（配置一致的照旧复用），
+因此 Docker 上会同时存在若干预热池容器，属预期。
+
+---
+
 ## 附录 A：P0 基线记录
 
 分支 `refactor/tree`，起点 `4c8c029`（main）。环境：`.venv`（uv + cpython-3.12.14），`PYTHONPATH=.`。

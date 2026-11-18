@@ -12,7 +12,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$harness = Split-Path -Parent $PSScriptRoot
+# 脚本位于 scripts/dev/，仓库根在上两级
+$harness = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $root = Split-Path -Parent $harness
 $platform = Join-Path $root 'smart-procurement-platform'
 
