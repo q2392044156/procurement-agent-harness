@@ -341,6 +341,20 @@ markers = ["live: 需要真实 LLM / 平台 / Docker"]
 
 **验收**：本地起 agent → 触发一次需要沙箱的请求 → 沙箱内 `ls /skills` 有内容；`SkillCatalog(SKILLS_DIR).index()` 能列出 15 个技能；**装一次技能后 `git status` 仍干净**（方案 a 的硬门禁）；`docker build` 成功。
 
+#### P3 执行记录（已完成，与计划的偏差）
+
+1. **硬编码点是 6 处，不是 3 处**（计划漏了 3 处，全部实测定位）：
+   `src/agent/main_agent.py:33`（`SKILLS_DIR`）、`src/agent/main_agent.py:129`（沙箱内 `cp`）、`src/agent/backends/sandbox_setup.py:396`（`_sync_project_files` 的 sync_map）、`src/agent/tools/web_fetch.py:31`（`SKILLS_DIR`）、`tests/tools/measure_skill_prompt.py:20`、`scripts/verify_phase_s5.py:77`。全部改为 `src/core/paths.py` 或 `root / "skills"`。
+2. **`src/core/paths.py` 提供的比计划多一个**：`PROJECT_ROOT` / `SRC_DIR` / `SKILLS_DIR` / `PROMPTS_DIR`。`main_agent.py` 与 `sandbox_setup.py` 里各自算的 `Path(__file__).parent...` 一并删掉——这类常量在文件被移动后不会报错，只会静默指向错误位置。
+3. **方案 a 的实际改法**（`src/agent/tools/web_fetch.py`）：删 `host_skills_dir`/`host_target`/`_install_from_sandbox_to_host` 整个函数；`installed` 直接由 `_validate_skill_in_sandbox` 返回的 `sandbox_files` 相对化得到；`_install_dependencies(host_target)` → `_install_dependencies(sandbox, sandbox_verify_dir, files)`，requirements.txt 改为从沙箱目录读。宿主机侧只剩「不改」，装技能后 `git status` 天然干净。
+4. **Dockerfile** 追加 `COPY skills skills`；`.dockerignore` 不需要动（skills 必须进镜像）。
+5. **P2 遗留的失效引用一并修掉**（9 个文件）：`evals/business/component_metrics.py` 里 6 个 unittest 测试 id（`src.test.test_sandbox_lifecycle.*` → `tests.sandbox.test_lifecycle.*`，`src.test.test_memory_integration.*` → `tests.memory.test_memory_integration.*`）、`WSL_START.md`、`docs/SKILLS.md`、`docs/PROGRESSIVE_SKILLS.md`、`docs/RAG.md`、`evals/{business,review_routing}/README.md`、两个测试文件自身的 docstring。`docs/IMPLEMENTATION_PLAN.md` 里的 `src/test/` 属于历史计划记录，保留原样。
+6. **顺带修掉一个既有 Windows bug**（`src/agent/middlewares/skills_sync.py:133`）：`rel_path = str(file_path.relative_to(self._skills_dir))` 在 Windows 上产出 `demo\SKILL.md`，拼出 `/skills/demo\SKILL.md` 这种非法沙箱路径（`SkillsLifecycleTests.test_core_skills_resync_after_proxy_generation_changes` 因此一直红，与本次重构无关）。改为 `.as_posix()`。
+7. **遗留待确认**：`skills/pdf-image-text-extractor.md` 与 `skills/procurement/chart_params.md` 是两个游离在技能根/分类目录下的 `.md`（不是 `<name>/SKILL.md` 结构），因此不被 `SkillCatalog` 收录——`SkillCatalog(SKILLS_DIR)` 实测 `entries = 10`、`warnings = []`。这是重构前就有的状态，P3 只搬不改。
+
+**门禁结果**：`compileall -q src tests` exit 0；`import src.agent.main_agent / backends.sandbox_setup / tools.web_fetch` 均 OK 且 `SKILLS_DIR` 指向仓库根 `skills/`；`tests/{skills,review,sandbox,memory,observability}` pytest **102 passed**；记忆层模块直跑 34/34。
+**未验证**：`docker build`（本机 docker 无镜像且拉取失败）与「真起 agent 触发沙箱请求」（需要平台 + 沙箱镜像）——留到 P4 验收时一起跑一次端到端。
+
 ### P4 重命名与分层（2–3 h，中高风险，机械但有量）
 
 1. 按 2.2–2.5、2.8 做 `git mv`（**先移动文件，再改 import**，避免半途不可运行）。

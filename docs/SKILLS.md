@@ -32,8 +32,8 @@
 
 ```powershell
 conda run -n procurement python scripts/verify_phase_s5.py
-conda run -n procurement python -m src.test.test_memory_layer      # 34/34
-conda run -n procurement python -m src.test.test_progressive_skills # 19，Windows 下符号链接用例自动跳过
+conda run -n procurement python -m tests.memory.test_memory_layer   # 34/34
+conda run -n procurement python -m pytest tests/skills/test_catalog.py -q  # 19，Windows 下符号链接用例自动跳过
 ```
 
 S5 门禁覆盖：Mongo 落盘、用户隔离、改口历史、偏好字典、6 个技能可发现/可读取、目录元数据。

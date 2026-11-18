@@ -59,5 +59,5 @@ version: 1.0.0
 
 ## 注意事项
 - 技能文件存储在 `/persisted-skills/` 路径（StoreBackend）
-- 本地技能源文件在 `src/skills/` 目录
+- 本地技能源文件在仓库根 `skills/` 目录
 - 沙箱内技能路径: `/skills/{scope}/{skill-name}/`

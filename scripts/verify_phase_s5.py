@@ -74,7 +74,7 @@ def main() -> int:
           and "[REDACTED]" in contact.content,
           f"content={getattr(contact, 'content', None)}")
 
-    catalog = SkillCatalog(ROOT / "src" / "skills", store=store, user_id=uid)
+    catalog = SkillCatalog(ROOT / "skills", store=store, user_id=uid)
     entries, warnings = catalog.entries()
     ids = [entry["id"] for entry in entries]
     required = [

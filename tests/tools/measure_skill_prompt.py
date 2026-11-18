@@ -17,7 +17,7 @@ def main():
                     if isinstance(node, ast.FunctionDef) and node.name == "_load_skills_prompt")
     namespace = {"Path": Path, "agent_logger": logging.getLogger(__name__)}
     exec(compile(ast.Module(body=[function], type_ignores=[]), "baseline", "exec"), namespace)
-    skills = root / "src/skills"
+    skills = root / "skills"
     before = namespace["_load_skills_prompt"](skills)
     catalog = SkillCatalog(skills)
     after = catalog.index()

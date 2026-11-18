@@ -33,7 +33,7 @@ class SkillsSyncMiddleware(AgentMiddleware):
     技能同步中间件（Harness — 完整文件夹级增量同步）
 
     职责：
-    - 每次 Agent 执行前增量同步 src/skills/ → 沙箱 /skills/
+    - 每次 Agent 执行前增量同步 skills/ → 沙箱 /skills/
     - 使用文件相对路径的 MD5 hash 实现精准增量同步
     - 保留完整目录结构（子目录不丢失）
     - 检测并清理沙箱中已被本地删除的文件
@@ -130,7 +130,9 @@ class SkillsSyncMiddleware(AgentMiddleware):
         current_files: dict[str, str] = {}  # rel_path → hash
         for file_path in self._skills_dir.rglob("*"):
             if file_path.is_file() and not self._should_skip(file_path):
-                rel_path = str(file_path.relative_to(self._skills_dir))
+                # 相对路径统一用 POSIX 分隔符：它既当缓存 key，也直接拼成沙箱内的
+                # /skills/<rel> 路径；用 os.sep 会在 Windows 上拼出 /skills/demo\SKILL.md。
+                rel_path = file_path.relative_to(self._skills_dir).as_posix()
                 file_hash = self._compute_hash(file_path)
                 current_files[rel_path] = file_hash
 

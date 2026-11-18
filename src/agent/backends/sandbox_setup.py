@@ -20,9 +20,7 @@ from typing import Optional
 from .custom_opensandbox import CustomOpenSandbox
 from ..log_utils import sandbox_logger
 from ..config import SANDBOX_WORK_DIR, SANDBOX_IMAGE
-
-# 项目根目录（用于定位本地文件同步到沙箱）
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+from ...core.paths import PROJECT_ROOT, SKILLS_DIR
 
 
 # ============================================================
@@ -382,7 +380,7 @@ def _sync_project_files(sandbox: CustomOpenSandbox):
     将项目关键文件同步到沙箱内，确保沙箱内可以独立测试和运行代码。
 
     同步内容：
-    1. src/skills/       → /skills/       （技能文件）
+    1. skills/           → /skills/       （技能文件，仓库根目录）
     2. requirements.txt  → /workspace/requirements.txt （依赖）
     3. src/mcp_server/   → /workspace/mcp_server/ （MCP 工具，可测试调用）
     4. src/agent/tools/  → /workspace/agent_tools/ （Agent 工具脚本）
@@ -393,7 +391,7 @@ def _sync_project_files(sandbox: CustomOpenSandbox):
     """
     sync_map = [
         # (本地路径, 沙箱目标路径, 描述)
-        (PROJECT_ROOT / "src" / "skills", "/skills", "Skills"),
+        (SKILLS_DIR, "/skills", "Skills"),
         (PROJECT_ROOT / "requirements.txt", "/workspace/requirements.txt", "requirements.txt"),
         (PROJECT_ROOT / "src" / "mcp_server", "/workspace/mcp_server", "MCP Server"),
         (PROJECT_ROOT / "src" / "agent" / "tools", "/workspace/agent_tools", "Agent Tools"),
