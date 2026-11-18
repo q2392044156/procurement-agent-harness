@@ -13,7 +13,7 @@ from pathlib import Path
 from langchain_core.tools import tool
 
 from src.core.logging import agent_logger
-from src.agent.backends.sandbox_holder import get_sandbox
+from src.sandbox.holder import get_sandbox
 
 CHART_TYPES = [
     "bar", "horizontal_bar", "stacked_bar", "grouped_bar",

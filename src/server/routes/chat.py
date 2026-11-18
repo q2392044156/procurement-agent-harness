@@ -20,7 +20,7 @@ from langgraph.types import Command
 from src.server.sessions import agent_loader
 from src.core.contracts import ChatRequest, ResumeRequest
 from src.core.logging import web_logger
-from src.agent.observability import finish_trace, reset_trace, start_trace
+from src.observability.trace import finish_trace, reset_trace, start_trace
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -90,8 +90,8 @@ async def stream_chat_response(
 
     # 同一用户的整个流串行运行，避免两个会话同时覆盖 /tmp、/workspace 中的文件。
     # ContextVar 让图表、文档、Skill 工具在并发用户之间取到正确的稳定 Proxy。
-    from src.agent.backends.sandbox_holder import bind_sandbox, reset_sandbox
-    from src.agent.backends.sandbox_manager import sandbox_manager
+    from src.sandbox.holder import bind_sandbox, reset_sandbox
+    from src.sandbox.manager import sandbox_manager
     from src.agent.runtime_context import bind_runtime, reset_runtime
 
     await session.run_lock.acquire()

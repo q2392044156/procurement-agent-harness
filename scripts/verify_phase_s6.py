@@ -62,7 +62,7 @@ def main() -> int:
                 reply_chars = 0
     check("agent turn completed", reply_chars >= 100, f"replyChars={reply_chars} exit={code}")
 
-    from src.agent.metrics import summarize
+    from src.observability.metrics import summarize
 
     metrics = summarize()
     check("tool trace recorded", metrics["exists"] and metrics["calls"] >= 1,

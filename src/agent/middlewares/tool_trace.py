@@ -16,7 +16,7 @@ from typing import Any, Awaitable, Callable
 from langchain.agents.middleware import AgentMiddleware, ToolCallRequest
 from langchain_core.messages import ToolMessage
 
-from src.agent.observability import current_trace
+from src.observability.trace import current_trace
 
 ROOT = Path(__file__).resolve().parents[3]
 TRACE_FILE = Path(os.getenv("TOOL_TRACE_FILE", str(ROOT / "logs" / "tool_trace.jsonl")))

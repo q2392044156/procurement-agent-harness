@@ -372,7 +372,7 @@ def install_skill(url: str, skill_name: str = "") -> str:
     skill_name = re.sub(r"[^\w\-]", "_", skill_name)
 
     # 获取沙箱实例（安全隔离环境）
-    from src.agent.backends.sandbox_holder import get_sandbox
+    from src.sandbox.holder import get_sandbox
     sandbox = get_sandbox()
 
     try:

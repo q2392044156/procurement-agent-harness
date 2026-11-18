@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import time
 
-from src.agent.observability import TraceContext
+from src.observability.trace import TraceContext
 
 
 def test_trace_aggregates_tools_models_and_interrupt():
