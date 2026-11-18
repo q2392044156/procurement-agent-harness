@@ -537,7 +537,13 @@ frontend 3000 / qdrant 6333）。
 顺带修 `scripts/dev/{build-images,reset_demo}.ps1` 的路径上溯（P4f 挪目录后少退一级），
 并让 `build-images.ps1` 一并构建沙箱镜像。
 
-**保留的已知小问题**：`/app/data/download` 里的文件名沿用沙箱内的中文名，下载链接需 URL 编码；
+**下载链路**：`/api/download/{filename}` 原本也要求 `X-Internal-Token`，而工具返回的是给用户
+直接点击的 `<a href>`，浏览器无法附加该请求头 → 点击必 401。现在该路由是令牌校验的唯一例外
+（只按文件名回读 `data/download/` 顶层文件，带目录穿越校验），并按扩展名设置
+`Content-Type`/`inline`（PNG 可在前端直接预览）。平台 `compose.yml` 为 agent 增加
+`agent-downloads:/app/data/download` 命名卷，容器重建后链接仍然有效。
+
+**遗留**：下载文件名沿用沙箱内的中文名，链接需 URL 编码（模型有时会自己改成 ASCII 名）；
 `SandboxManager.prune_stale_containers()` 只清「配置过期」的容器（配置一致的照旧复用），
 因此 Docker 上会同时存在若干预热池容器，属预期。
 
