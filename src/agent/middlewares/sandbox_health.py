@@ -8,7 +8,7 @@ from typing import Any
 
 from langchain.agents.middleware import AgentMiddleware, Runtime
 
-from src.agent.log_utils import middleware_logger
+from src.core.logging import middleware_logger
 
 
 class SandboxHealthMiddleware(AgentMiddleware):

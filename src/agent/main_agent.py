@@ -17,9 +17,9 @@ from langchain.agents.middleware import (
 )
 
 from src.core.paths import PROJECT_ROOT, PROMPTS_DIR, SKILLS_DIR
-from src.agent.config import get_llm, INTERRUPT_ON_TOOLS, skills_store_namespace, MAX_MODEL_CALLS, MAX_TOOL_CALLS, SANDBOX_HEALTH_CHECK_INTERVAL_SECONDS
-from src.agent.schema import ProcurementContext
-from src.agent.log_utils import agent_logger
+from src.core.settings import get_llm, INTERRUPT_ON_TOOLS, skills_store_namespace, MAX_MODEL_CALLS, MAX_TOOL_CALLS, SANDBOX_HEALTH_CHECK_INTERVAL_SECONDS
+from src.core.contracts import ProcurementContext
+from src.core.logging import agent_logger
 from src.agent.memory.config import DEFAULT_MEMORY_CONFIG
 from src.agent.memory.keeper import MemoryKeeper
 from src.agent.prompts.main import MAIN_SYSTEM_PROMPT, MEMORY_USAGE_PROMPT

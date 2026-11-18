@@ -9,8 +9,8 @@ from typing import Any
 
 from langchain.agents.middleware import AgentMiddleware, Runtime
 
-from src.agent.config import skills_store_namespace
-from src.agent.log_utils import middleware_logger
+from src.core.settings import skills_store_namespace
+from src.core.logging import middleware_logger
 
 
 class UserSkillsRestoreMiddleware(AgentMiddleware):

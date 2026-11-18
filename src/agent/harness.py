@@ -26,8 +26,8 @@ from typing_extensions import NotRequired, TypedDict
 from langchain.agents.middleware import AgentMiddleware, Runtime
 from langchain.agents.middleware.types import AgentState, PrivateStateAttr
 
-from src.agent.schema import Phase, ReviewResult, Plan, PlanStep
-from src.agent.log_utils import agent_logger
+from src.core.contracts import Phase, ReviewResult, Plan, PlanStep
+from src.core.logging import agent_logger
 
 # DSL 配置文件路径
 HARNESS_CONFIG_PATH = Path(__file__).parent / "harness_config.yaml"

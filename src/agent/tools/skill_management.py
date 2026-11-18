@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from langchain_core.tools import tool
 
-from src.agent.config import skills_store_namespace
+from src.core.settings import skills_store_namespace
 from src.agent.runtime_context import get_current_store, get_current_user_id
 
 

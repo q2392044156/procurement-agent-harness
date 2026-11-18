@@ -15,8 +15,8 @@ from deepagents.backends.sandbox import (
     FileDownloadResponse, FileUploadResponse,
 )
 from deepagents.backends import DEFAULT_EXECUTE_TIMEOUT
-from src.agent.log_utils import sandbox_logger
-from src.agent.config import SANDBOX_WORK_DIR
+from src.core.logging import sandbox_logger
+from src.core.settings import SANDBOX_WORK_DIR
 
 
 class CustomOpenSandbox(BaseSandbox):

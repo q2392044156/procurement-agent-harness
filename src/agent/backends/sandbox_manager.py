@@ -28,8 +28,8 @@ from datetime import datetime, timedelta
 
 from src.agent.backends.custom_opensandbox import CustomOpenSandbox
 from src.agent.backends.sandbox_setup import SandboxConfig, create_secure_sandbox
-from src.agent.config import SANDBOX_IDLE_TIMEOUT_MINUTES, SANDBOX_WARM_POOL_SIZE
-from src.agent.log_utils import sandbox_logger
+from src.core.settings import SANDBOX_IDLE_TIMEOUT_MINUTES, SANDBOX_WARM_POOL_SIZE
+from src.core.logging import sandbox_logger
 
 
 # ============================================================

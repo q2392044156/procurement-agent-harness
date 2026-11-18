@@ -152,7 +152,7 @@ def main() -> int:
     _, cancel_replay = post_json(f"/api/orders/{order_id}/cancel", purchaser_id, cancel_body)
     check("cancel is idempotent", (cancel_replay.get("data") or {}).get("status") == "CANCELLED")
 
-    from src.agent.config import INTERRUPT_ON_TOOLS  # noqa: E402
+    from src.core.settings import INTERRUPT_ON_TOOLS  # noqa: E402
 
     expected_hitl = {"requisition_create", "requisition_submit", "requisition_convert", "order_cancel"}
     check("hitl covers write tools", expected_hitl.issubset(INTERRUPT_ON_TOOLS),

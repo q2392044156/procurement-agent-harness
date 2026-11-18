@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from src.agent.config import INTERRUPT_ON_TOOLS  # noqa: E402
+from src.core.settings import INTERRUPT_ON_TOOLS  # noqa: E402
 from src.agent.subagents.loader import load_subagent_configs, resolve_subagent_tools  # noqa: E402
 
 

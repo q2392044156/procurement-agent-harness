@@ -15,7 +15,7 @@ from typing import Any
 
 from langchain.agents.middleware import AgentMiddleware, Runtime
 
-from src.agent.log_utils import middleware_logger
+from src.core.logging import middleware_logger
 from src.agent.memory.config import DEFAULT_MEMORY_CONFIG, MemoryConfig
 from src.agent.memory.extractor import CHART_KEYWORDS, OUTPUT_KEYWORDS, extract_preferences
 from src.agent.memory.keeper import MemoryKeeper
@@ -64,7 +64,7 @@ class MemoryUpdateMiddleware(AgentMiddleware):
             current_messages = messages[start:]
             updates = extract_preferences(current_messages, self._config)
             if self._config.llm_extraction_enabled and current_messages:
-                from src.agent.config import get_llm
+                from src.core.settings import get_llm
                 from src.agent.memory.extractor import llm_extract_preferences
                 try:
                     updates.update(llm_extract_preferences(current_messages, get_llm(thinking=False)))
