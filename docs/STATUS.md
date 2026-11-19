@@ -39,6 +39,10 @@ cd ..\smart-procurement-platform
 - 与平台端到端联调：`platform_integration_smoke` **15/15 PASS**（只读问答、KB 引用、HITL 建单/拒绝、图表出图与回传下载、历史、观测）；
   `pytest tests` **120 passed**；`check_imports` 130 模块全通。
 - 已完成合并：`refactor/tree` 以 `--no-ff` 并入 `main`（合并提交 `d8c043e`），合并后在 `main` 复跑全部门禁仍全绿。
+- 合并后补修一处资源泄漏：预热池容器（`erp-sandbox-warm-*`）只存在于进程内存，重启后无人认领，
+  每次重启泄漏一个约 512MB 的容器（实测累积 8 个）。`prune_stale_containers` 现在回收它们，
+  `ensure_warm_pool` 会摘掉指向已删容器的池条目；重启后稳定保持「1 预热 + 1 在用」。
+- 另在系统提示中禁止「需要我现在开始吗」这类反问代替执行，`sse_smoke` 连跑 3 次全过（此前偶发假失败）。
 - 修掉 6 个改造前既有缺陷：只读 rootfs 下 `put_archive` 失败导致沙箱回退、DeepSeek
   `response_format=json_schema` 400（评审静默降级）、grader 内部工具泄漏到 SSE 事件、
   图表链路缺依赖/缺空间/noexec/缺中文字体、100k 输出截断损坏 base64 与 JSON 协议、
