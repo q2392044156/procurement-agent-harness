@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 def load_env():
     """加载项目根目录的 .env 文件"""
-    # 项目根目录：src/agent/../../.env
+    # src/core/env.py → 上溯三级即仓库根
     project_root = Path(__file__).parent.parent.parent
     env_file = project_root / ".env"
     if env_file.exists():
