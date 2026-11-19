@@ -31,8 +31,7 @@ def test_trace_aggregates_tools_models_and_interrupt():
     assert record["tools"][0]["name"] == "part_search"
     assert record["tools"][1]["error"] == "timeout"
     print("PASS test_trace_aggregates_tools_models_and_interrupt")
-    return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(test_trace_aggregates_tools_models_and_interrupt())
+    test_trace_aggregates_tools_models_and_interrupt()
