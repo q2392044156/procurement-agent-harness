@@ -36,6 +36,22 @@ def _is_internal_tool(namespace, name: str | None = None) -> bool:
     return any("rubric_grader" in str(part) for part in (namespace or ()))
 
 
+# 只有模型自己说的话才推给前端。human / system 消息是内部注入的提示词与评审反馈
+# （rubric middleware 会追加一段 "Address every failing criterion…"），tool 消息
+# 走 tool_result 事件，它们都不该出现在助手气泡里。
+_USER_FACING_MESSAGE_TYPES = frozenset({"ai", "AIMessageChunk", "AIMessage"})
+
+
+def visible_text_content(token) -> str:
+    """返回可以当作助手正文流式输出的文本，内部消息一律返回空串。"""
+    if getattr(token, "type", "") not in _USER_FACING_MESSAGE_TYPES:
+        return ""
+    content = getattr(token, "content", "")
+    if not isinstance(content, str) or not content.strip():
+        return ""
+    return content
+
+
 def sse_event(event: str, data: dict) -> str:
     """格式化 SSE 事件（严格遵循 event:/data: 协议）"""
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
@@ -348,13 +364,14 @@ async def stream_chat_response(
                     })
                     continue
 
-                # AIMessage 纯文本 → token 事件
-                if content and isinstance(content, str) and content.strip():
+                # AIMessage 纯文本 → token 事件（内部注入的 human/system 消息被过滤掉）
+                visible_text = visible_text_content(token)
+                if visible_text:
                     # 首次收到 token 时结束 thinking
                     if not thinking_emitted:
                         yield sse_event("thinking", {"status": "end"})
                         thinking_emitted = True
-                    assistant_content += content
+                    assistant_content += visible_text
 
                     # 判断来源（通过 namespace 元组）
                     source = "main"
@@ -364,7 +381,7 @@ async def stream_chat_response(
                             source = "analyst"
                         elif "order" in ns_str:
                             source = "order"
-                    yield sse_event("token", {"content": content, "source": source})
+                    yield sse_event("token", {"content": visible_text, "source": source})
 
         # ===== 流正常结束：强制引用/拒答兜底 =====
         if assistant_content and kb_searched:
