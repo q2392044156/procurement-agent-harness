@@ -245,7 +245,7 @@ QDRANT_URL=http://localhost:6333
 
 ```powershell
 cd ..\procurement-agent-harness
-.\scripts\build-images.ps1
+.\scripts\dev\build-images.ps1
 ```
 
 只会构建 `procuremind-agent:latest`，MCP 复用同一镜像。
@@ -257,7 +257,7 @@ cd ..\procurement-agent-harness
 首次启动会清空数据库、重建主数据/知识库，并导入演示业务数据：
 
 ```powershell
-.\scripts\reset_demo.ps1 -Agent -WithBusiness
+.\scripts\dev\reset_demo.ps1 -Agent -WithBusiness
 ```
 
 该命令会：
@@ -295,7 +295,7 @@ docker compose --profile agent up -d
 
 ```powershell
 cd ..\procurement-agent-harness
-.\scripts\build-images.ps1
+.\scripts\dev\build-images.ps1
 
 cd ..\smart-procurement-platform
 docker compose --profile agent up -d --force-recreate agent mcp
