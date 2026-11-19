@@ -32,6 +32,8 @@ from src.core.settings import SANDBOX_IDLE_TIMEOUT_MINUTES, SANDBOX_IMAGE, SANDB
 
 # 沙箱容器统一前缀（预热池与按需创建都用它，便于批量清理）
 _CONTAINER_PREFIX = "erp-sandbox"
+# 预热池容器的名字前缀：它们只活在进程内存里，重启后一律回收
+_WARM_CONTAINER_PREFIX = "erp-sandbox-warm-"
 from src.core.logging import sandbox_logger
 
 
@@ -159,6 +161,7 @@ class SandboxManager:
 
     def ensure_warm_pool(self):
         """确保预热池中有足够的空闲容器"""
+        self._drop_dead_warm_entries()
         with self._lock:
             warm_count = sum(
                 1 for e in self._entries.values()
@@ -186,6 +189,24 @@ class SandboxManager:
             finally:
                 with self._lock:
                     self._warm_creating = max(0, self._warm_creating - 1)
+
+    def _drop_dead_warm_entries(self) -> int:
+        """摘掉指向已消失容器的预热池条目。
+
+        预热容器可能被外部清掉（``docker prune``、进程重启后的
+        ``prune_stale_containers``），而管理器的 ``_entries`` 还留着它们：不摘掉的话
+        ``ensure_warm_pool`` 会一直认为池子是满的，再也不补新容器。
+        """
+        with self._lock:
+            dead = [
+                name for name, entry in self._entries.items()
+                if entry.state == SandboxState.WARM and not entry.is_healthy()
+            ]
+            for name in dead:
+                self._entries.pop(name, None)
+        for name in dead:
+            sandbox_logger.info(f"Dropped dead warm sandbox entry {name}")
+        return len(dead)
 
     def _create_warm_container(self) -> SandboxEntry:
         """创建一个预热容器"""
@@ -476,7 +497,7 @@ class SandboxManager:
         sandbox_logger.info("All sandboxes destroyed")
 
     def prune_stale_containers(self) -> int:
-        """清掉与当前配置不一致的旧沙箱容器。
+        """清掉配置过期或无人认领的旧沙箱容器。
 
         Agent 重启后会把 user → container 映射从 MongoDB 恢复（刻意保留用户
         /workspace 里的产物）。但沙箱的挂载布局或镜像一旦升级，恢复回来的旧容器
@@ -484,7 +505,12 @@ class SandboxManager:
         旧容器里半装好的 numpy 会让每次图表生成都报
         "failed to map segment from shared object"。
 
-        这里只删“配置明显过期”的容器，配置一致的照样保留。
+        这里删两类容器：
+
+        1. 配置明显过期的（挂载点或镜像与当前不一致）；
+        2. **预热池容器**（``erp-sandbox-warm-*``）——它们只存在于进程内存里，
+           从不写入 MongoDB，所以重启后进程内的 ``_entries`` 是空的，上一轮遗留的
+           预热容器永远无法被认领，不删就会每次重启泄漏一个（约 512MB 内存）。
         """
         expected_mounts = {"/tmp", "/workspace", "/workspace/python-packages", "/skills"}
         try:
@@ -502,6 +528,8 @@ class SandboxManager:
                 tmpfs = set(((container.attrs.get("HostConfig") or {}).get("Tmpfs") or {}).keys())
                 tags = set((container.image.tags if container.image else []) or [])
                 reasons = []
+                if container.name.startswith(_WARM_CONTAINER_PREFIX):
+                    reasons.append("orphan warm container")
                 if expected_mounts - tmpfs:
                     reasons.append(f"missing mounts={sorted(expected_mounts - tmpfs)}")
                 if SANDBOX_IMAGE not in tags:

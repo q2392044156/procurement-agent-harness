@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import tempfile
+import threading
 import unittest
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,6 +24,7 @@ from src.sandbox.holder import (
     set_sandbox,
 )
 from src.sandbox.proxy import SandboxBackendProxy
+from src.sandbox.manager import SandboxEntry, SandboxManager, SandboxState
 from src.core.settings import skills_store_namespace
 from src.sandbox.health_middleware import SandboxHealthMiddleware
 from src.agent.skills.sync import SkillsSyncMiddleware
@@ -313,6 +315,48 @@ class HarnessReviewSelectionTests(unittest.TestCase):
             None,
         )
         self.assertNotIn("rubric", update)
+
+
+class WarmPoolRegistryTests(unittest.TestCase):
+    """预热池登记表：容器没了要摘牌，否则池子永远补不上。"""
+
+    class _StubSandbox:
+        def __init__(self, name: str, healthy: bool = True):
+            self.container_name = name
+            self.container_id = f"id-{name}"
+            self._healthy = healthy
+
+        def ping(self) -> bool:
+            return self._healthy
+
+    def _manager(self, entries: dict) -> object:
+        manager = object.__new__(SandboxManager)
+        manager._lock = threading.RLock()
+        manager._entries = entries
+        manager._user_map = {}
+        manager._warm_creating = 0
+        manager._warm_pool_size = 1
+        return manager
+
+    def test_dead_warm_entry_is_dropped_from_registry(self):
+        alive = SandboxEntry(sandbox=self._StubSandbox("erp-sandbox-warm-alive"))
+        dead = SandboxEntry(sandbox=self._StubSandbox("erp-sandbox-warm-dead", healthy=False))
+        manager = self._manager({alive.container_name: alive, dead.container_name: dead})
+
+        self.assertEqual(manager._drop_dead_warm_entries(), 1)
+        self.assertIn(alive.container_name, manager._entries)
+        self.assertNotIn(dead.container_name, manager._entries)
+
+    def test_claimed_dead_entry_is_kept_for_recovery(self):
+        dead = SandboxEntry(
+            sandbox=self._StubSandbox("erp-sandbox-1-dead", healthy=False),
+            user_id="1",
+            state=SandboxState.CLAIMED,
+        )
+        manager = self._manager({dead.container_name: dead})
+
+        self.assertEqual(manager._drop_dead_warm_entries(), 0)
+        self.assertIn(dead.container_name, manager._entries)
 
 
 if __name__ == "__main__":
