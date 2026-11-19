@@ -37,6 +37,8 @@ flowchart LR
   MCP -->|"内部令牌 + X-User-Id"| API["平台 /api/**"]
   A --> RAG["bge-m3 + Qdrant"]
   RAG --> API
+  G --> SBX["Docker 沙箱<br/>图表 / 文档 / Python"]
+  SBX -->|"回传文件"| A
   API --> DB[("MySQL / Flowable / Redis / MinIO")]
 ```
 
@@ -69,7 +71,7 @@ flowchart LR
 | 工具协议 | FastMCP、langchain-mcp-adapters |
 | 记忆/会话 | MongoDB + LangGraph Checkpointer |
 | 向量检索 | bge-m3（1024 维）、Qdrant、BM25 稀疏向量 |
-| 沙箱 | Docker（python:3.11-slim），用于图表/文档生成 |
+| 沙箱 | Docker（`procuremind-sandbox:latest`：python:3.11-slim + matplotlib/numpy/pandas + Noto CJK 字体），用于图表/文档生成 |
 | 业务平台 | Spring Boot 3.5、MySQL 8.4、Redis 7、MinIO、Flowable 7.2 |
 
 ## 实现功能
@@ -124,7 +126,9 @@ requisition_create / requisition_submit / requisition_cancel / requisition_conve
 
 ### 产物与可观测
 
-- 生成图表、Excel/Word 报告；
+- 生成图表、Excel/Word 报告；图表与文档先落在沙箱，再由 `download_sandbox_file` 回传到
+  `data/download/`，通过 `GET /api/download/<文件名>` 直接预览或下载（图片内联、其余附件）；
+- 沙箱镜像预装 matplotlib/numpy/pandas 与 Noto CJK 字体，中文标题不会变方框；
 - 每次请求生成 32 位 `trace_id`，记录 Turn 耗时、状态、HITL 中断、工具/模型调用和 token；
 - 工具 trace：`trace_id / request_id / thread_id / user_id / tool / 耗时 / 状态`；
 - 提供 `/api/observability/summary`、`/turns`、`/threads/{id}`、`/errors` 查询接口；
@@ -145,7 +149,11 @@ python -m scripts.dev.observability_report --api http://localhost:8000
 ```text
 procurement-agent-harness/
 ├── src/
-│   ├── core/                      # 被多层共享的内核：paths / settings / env / logging / contracts
+│   ├── core/                      # 零业务依赖的内核：paths / settings / llm / env / logging / contracts
+│   │   ├── settings.py            #   Mongo、MCP、沙箱、Store 命名空间、调用上限、HITL 写工具表
+│   │   ├── llm.py                 #   DeepSeek 客户端（关闭 json_schema 能力位，避免 400）
+│   │   ├── contracts.py           #   对外契约：ChatRequest / SSEEvent / DisplayMessage …
+│   │   └── env.py  logging.py  paths.py
 │   ├── server/                    # 传输层：FastAPI 入口、SSE 路由、会话管理
 │   │   ├── main.py                #   应用入口（python -m src.server.main）
 │   │   ├── settings.py            #   Mongo / 内部令牌等传输层配置
@@ -168,19 +176,22 @@ procurement-agent-harness/
 │   ├── mcp_server/                # MCP 协议适配：server_main + tools（52 个采购工具）
 │   └── kb/                        # RAG：解析、切分、bge-m3、Qdrant、混合检索、引用校验
 ├── skills/                        # 技能内容（main/ 通用 + procurement/ 采购），拷进沙箱消费
-├── tests/                         # 单元/集成测试（memory skills review sandbox observability kb tools integration）
-├── scripts/                       # verify/ 阶段门禁 · seed/ 语料入库 · smoke/ 链路冒烟 · dev/ 运维
-├── evals/                         # business/ review_routing/ live/ rag/ security/ 评测脚本与结果
+├── tests/                         # pytest 用例（memory skills review sandbox observability kb tools
+│                                  #   integration）+ support/ 共享假件 + manual_*.py 手动联调脚本
+├── scripts/
+│   ├── dev/                       # build-images.ps1 · reset_demo.ps1 · check_imports.py · 观测报告 · 单轮调试
+│   ├── seed/                      # 语料生成与知识库入库（kb_ingest / seed_* / generate_*_corpus）
+│   ├── smoke/                     # sse_smoke · platform_proxy_smoke · platform_integration_smoke
+│   └── verify/                    # S0–S7 阶段门禁（python -m scripts.verify.s0 … s7）
+├── evals/                         # business/ review_routing/ live/ rag/ security/
+├── docker/sandbox/Dockerfile      # 沙箱镜像：matplotlib / numpy / pandas / Noto CJK 字体
+├── data/                          # 运行期产物：download/（回传文件）、kb_state.json、bm25_stats.json（不入库）
+├── logs/                          # turn_trace.jsonl 等运行日志（不入库）
 ├── samples/                       # 制度与工业规范语料
-├── docs/
-│   ├── screenshots/               # README 使用的界面截图
-│   ├── ARCHITECTURE.md
-│   ├── RAG.md
-│   ├── SKILLS.md
-│   ├── SECURITY.md
-│   └── SECURITY_EVAL.md
+├── docs/                          # ARCHITECTURE / RAG / SKILLS / SECURITY / OBSERVABILITY / STATUS / RESTRUCTURE_PLAN …
+│   └── screenshots/               # README 使用的界面截图
 ├── pyproject.toml                 # pytest 配置（pythonpath / testpaths）
-├── Dockerfile
+├── Dockerfile                     # agent 与 mcp 共用的镜像
 ├── requirements.txt
 ├── .env.example
 └── README.md
@@ -202,7 +213,9 @@ workspace/
 - Docker Desktop / Docker Engine + Docker Compose v2
 - 一个可用的 DeepSeek API Key
 - 平台仓库位于同级目录
+- Python 3.12 + `uv`（仅「本地开发模式」需要；容器模式不需要本机 Python）
 - 本机 `3000`、`8080`、`8000`、`8001`、`9000`、`9001`、`6333`、`27017` 端口未被占用
+  （`9000/9001` 被占用时，平台 `compose.yml` 的演示覆盖文件会把 MinIO 改到 `9100/9101`）
 
 ### 1. 配置环境
 
@@ -237,6 +250,7 @@ MCP_SERVER_URL=http://localhost:8001
 MCP_PORT=8001
 MONGODB_URI=mongodb://localhost:27017
 QDRANT_URL=http://localhost:6333
+SANDBOX_IMAGE=procuremind-sandbox:latest
 ```
 
 > 两个 `.env` 中的 `AGENT_INTERNAL_TOKEN` 必须完全一致；不要提交真实密钥。
@@ -248,7 +262,20 @@ cd ..\procurement-agent-harness
 .\scripts\dev\build-images.ps1
 ```
 
-只会构建 `procuremind-agent:latest`，MCP 复用同一镜像。
+一次构建两个镜像：
+
+| 镜像 | 用途 |
+|---|---|
+| `procuremind-agent:latest` | Agent 与 MCP 共用（MCP 不单独出镜像） |
+| `procuremind-sandbox:latest` | 沙箱：matplotlib / numpy / pandas + Noto CJK 字体，图表和文档生成要用 |
+
+也可以单独构建沙箱镜像（改图表依赖时只跑这一条即可）：
+
+```powershell
+docker build --network=host -t procuremind-sandbox:latest docker/sandbox
+```
+
+`docker/sandbox` 用 `--network=host` 是为了绕开默认 bridge 网络下 pip 下载停滞。镜像名由 Harness `.env` 的 `SANDBOX_IMAGE` 指定（默认 `procuremind-sandbox:latest`）；镜像不存在时沙箱会退回 `python:3.11-slim`，此时图表能力不可用。
 
 > 只有 Dockerfile、依赖或源码变化时才需要重新构建；日常启动不要加 `--build`。
 
@@ -269,6 +296,10 @@ cd ..\procurement-agent-harness
 - 导入 120 张采购订单、95 张收货单、48 张领料和库存流水。
 
 > 首次启动会下载 bge-m3，约 2.2GB；可通过 `.env` 配置 `HF_ENDPOINT` 和 `HF_HOME`。
+>
+> 脚本里的「灌语料 + 重建索引」默认调用 conda 环境 `procurement`（见 `scripts/dev/reset_demo.ps1`）；
+> 若改用本机 venv，需要先装好知识库依赖：`sentence-transformers`、`pymupdf`、`rapidocr-onnxruntime`、
+> `python-docx` 等（见 `requirements.txt`）。只想启动服务、不重灌数据时加 `-SkipKb`。
 
 ### 4. 访问入口
 
@@ -289,6 +320,13 @@ cd ..\procurement-agent-harness
 ```powershell
 cd ..\smart-procurement-platform
 docker compose --profile agent up -d
+```
+
+等价的一行命令（会顺带处理 `9000` 端口冲突，并带上演示覆盖文件）：
+
+```powershell
+cd ..\smart-procurement-platform
+.\scripts\demo-up.ps1 -Agent          # 加 -Build 则先重建镜像；-Down 关闭
 ```
 
 如果修改了 Harness 代码并重新构建镜像：
@@ -323,6 +361,98 @@ docker compose stop frontend backend
 
 ```powershell
 docker compose start
+```
+
+### 7. 本地开发模式（不用容器跑 Harness）
+
+改 Harness 代码时最省事的循环：**基础设施用容器，Agent / MCP 跑在本机进程里**。改完重启进程即可，不必重建镜像。
+
+```powershell
+# 1) 只起基础设施
+cd ..\smart-procurement-platform
+docker compose up -d mysql redis minio mongo qdrant
+
+# 2) 准备本机环境（首次）
+cd ..\procurement-agent-harness
+uv venv --python 3.12
+uv pip install --python .\.venv\Scripts\python.exe -r requirements.txt
+Copy-Item .env.example .env      # 填 DEEPSEEK_API_KEY / AGENT_INTERNAL_TOKEN
+```
+
+然后开四个终端（都在仓库根下用 `-m` 方式启动，不带 `sys.path` 胶水）：
+
+```powershell
+# 终端 1：MCP（先起，Agent 启动时要拉工具清单，:8001）
+cd ..\procurement-agent-harness
+.\.venv\Scripts\python.exe -m src.mcp_server.server_main
+
+# 终端 2：Agent（:8000）
+.\.venv\Scripts\python.exe -m src.server.main
+
+# 终端 3：平台后端（:8080）
+cd ..\smart-procurement-platform\backend
+mvn spring-boot:run
+
+# 终端 4：平台前端（:3000）
+cd ..\smart-procurement-platform\frontend
+npm run dev
+```
+
+本地模式下两个 `.env` 要指向本机端口：
+
+```dotenv
+# harness/.env
+ERP_BASE_URL=http://localhost:8080
+MCP_SERVER_URL=http://localhost:8001
+SANDBOX_IMAGE=procuremind-sandbox:latest
+```
+
+```dotenv
+# platform/.env
+AGENT_ENABLED=true
+AGENT_BASE_URL=http://localhost:8000
+AGENT_INTERNAL_TOKEN=<与 harness 完全一致>
+```
+
+平台后端默认 `AGENT_BASE_URL=http://localhost:8000`，前端 `vite` 开发服务器把 `/api` 代理到 `localhost:8080`，所以按上表配好即可直接联调。
+
+> 沙箱仍然由本机 Docker 提供，所以容器版的沙箱镜像要提前构建好（见第 2 步）。
+
+### 8. 验证与自检
+
+```powershell
+cd ..\procurement-agent-harness
+$py = '.\.venv\Scripts\python.exe'
+
+# 语法与导入完整性
+& $py -m compileall -q src tests scripts evals
+& $py -m scripts.dev.check_imports            # import smoke: ok=130 fail=0 / unresolved=0
+
+# 单元测试
+& $py -m pytest tests -q                     # 122 passed
+& $py -m tests.memory.test_memory_layer      # 34/34
+& $py -m tests.kb.test_grounding             # PASS (3 asserts)
+```
+
+链路冒烟（需要平台与 Harness 都已启动）：
+
+```powershell
+& $py -m scripts.smoke.sse_smoke                  # Agent 直连：问答 + HITL 批准/拒绝
+& $py -m scripts.smoke.platform_proxy_smoke       # JWT → Spring → Agent 代理
+& $py -m scripts.smoke.platform_integration_smoke # 端到端 15 项：问答 / KB / HITL / 图表回传 / 历史 / 观测
+```
+
+手动联调脚本（文件名带 `manual_`，不进 pytest 收集）：
+
+```powershell
+& $py -m tests.integration.manual_mcp_check    # MCP 工具直连（52 个工具）
+& $py -m tests.integration.manual_all_tools    # 数据模型 / 子 Agent 配置 / 工具清单
+```
+
+阶段门禁（S0–S7，逐项对应 `docs/STATUS.md`）：
+
+```powershell
+& $py -m scripts.verify.s0    # … s1 … s7
 ```
 
 
@@ -365,7 +495,8 @@ Agent 通过平台登录态识别用户，使用平台的演示账号：
 ### 安全评测
 
 ```powershell
-conda run -n procurement python -m evals.security.run
+cd ..\procurement-agent-harness
+.\.venv\Scripts\python.exe -m evals.security.run
 ```
 
 覆盖 10 类攻击面：内部 API 鉴权、角色提升、IDOR、批量删除/清库存、Prompt 注入写单、系统提示词/密钥提取、知识库 ACL、知识库间接注入、SQL 注入、HITL 拒绝不落库。当前 **10/10 PASS**，详见 [docs/SECURITY_EVAL.md](docs/SECURITY_EVAL.md)。
