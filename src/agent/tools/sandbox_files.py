@@ -1,7 +1,8 @@
 """沙箱文件下载工具（Harness — 真实 Docker 文件提取）。
 
 把沙箱容器里的文件（图表 PNG、报告 MD/HTML、CSV/JSON 等）读到宿主机
-``data/download/`` 目录，返回可供浏览器访问的 HTTP 链接。
+``data/download/`` 目录，返回相对 harness 的 HTTP 链接（``/api/download/<文件名>``），
+浏览器侧由平台代理转成 ``/api/v1/ai/files/<文件名>`` 再取二进制。
 
 取容器的方式很关键：必须用 **当前请求绑定的用户沙箱**（``src.sandbox.holder``
 里的 ContextVar / 注册表）。早期实现直接在 Docker 里扫「第一个名字以
@@ -10,6 +11,7 @@
 base64 绕路，还撞上工具调用上限。
 """
 from pathlib import Path
+from urllib.parse import quote
 
 from langchain_core.tools import tool
 
@@ -30,7 +32,14 @@ def _get_bound_sandbox():
 
 
 def _download_url(filename: str) -> str:
-    return f"http://localhost:8000/api/download/{filename}"
+    """返回相对 harness 的下载地址。
+
+    不能写死 ``http://localhost:8000``：浏览器走的是平台 nginx，平台会把
+    ``/api/v1/ai/files/<name>`` 代理到 harness 的 ``/api/download/<name>``，
+    前端识别出文件名后再换成带鉴权的平台地址。相对路径对直连 harness 的脚本
+    同样可用。
+    """
+    return f"/api/download/{quote(filename)}"
 
 
 @tool

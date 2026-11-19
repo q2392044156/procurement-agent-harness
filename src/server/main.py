@@ -7,6 +7,7 @@ import asyncio
 import hmac
 import time
 from pathlib import Path
+from urllib.parse import quote
 from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI, Request
@@ -176,7 +177,16 @@ async def download_file(filename: str):
 
     media_type = _DOWNLOAD_MEDIA_TYPES.get(candidate.suffix.lower(), "application/octet-stream")
     inline = media_type.startswith("image/")
-    headers = {"Content-Disposition": f'{"inline" if inline else "attachment"}; filename="{filename}"'}
+    # 中文文件名不能直接塞进 Content-Disposition：HTTP 头按 latin-1 编码，raw 中文会
+    # 抛 UnicodeEncodeError（表现为 500）。RFC 6266 的写法是 ASCII 兜底 + filename*
+    # 再给一遍 UTF-8 编码的名字。
+    ascii_name = filename.encode("ascii", "ignore").decode("ascii").strip() or "download"
+    headers = {
+        "Content-Disposition": (
+            f'{"inline" if inline else "attachment"}; '
+            f'filename="{ascii_name}"; filename*=UTF-8\'\'{quote(filename)}'
+        )
+    }
     return FileResponse(path=str(candidate), media_type=media_type, headers=headers)
 
 
