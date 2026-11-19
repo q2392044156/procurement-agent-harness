@@ -2,7 +2,7 @@
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qm
 
-from .config import COLLECTION, QDRANT_URL
+from src.kb.config import COLLECTION, QDRANT_URL
 
 DENSE = "dense"
 SPARSE = "bm25"

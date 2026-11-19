@@ -8,20 +8,10 @@
 对外只需要两个东西：``MemoryKeeper``（读写门面）和 ``MemoryConfig``（参数）。
 本包**不依赖 langchain / pymongo**，可以独立测试。
 """
-from .config import DEFAULT_MEMORY_CONFIG, MemoryConfig
-from .keeper import MemoryKeeper
-from .namespaces import (
-    episodic_ns,
-    legacy_preferences_ns,
-    org_policies_ns,
-    procedural_ns,
-    semantic_ns,
-    type_ns,
-)
-from .types import (
-    COLD, EPISODIC, HOT, PROCEDURAL, SEMANTIC, WARM,
-    MEMORY_TYPES, MemoryItem,
-)
+from src.agent.memory.config import DEFAULT_MEMORY_CONFIG, MemoryConfig
+from src.agent.memory.keeper import MemoryKeeper
+from src.agent.memory.namespaces import episodic_ns, legacy_preferences_ns, org_policies_ns, procedural_ns, semantic_ns, type_ns
+from src.agent.memory.types import COLD, EPISODIC, HOT, PROCEDURAL, SEMANTIC, WARM, MEMORY_TYPES, MemoryItem
 
 __all__ = [
     "MemoryKeeper",

@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import re
 
-from .config import FASTEMBED_CACHE, RERANK_MODEL, RERANKER
+from src.kb.config import FASTEMBED_CACHE, RERANK_MODEL, RERANKER
 
 _cross_encoder = None
 _cross_encoder_failed = False
@@ -37,7 +37,7 @@ def _fastembed_scores(query: str, texts: list[str]) -> list[float] | None:
 
 def _llm_scores(query: str, texts: list[str]) -> list[float] | None:
     try:
-        from src.agent.config import get_llm
+        from src.core.llm import get_llm
 
         numbered = "\n".join(
             f"[{index + 1}] {text[:600]}" for index, text in enumerate(texts)

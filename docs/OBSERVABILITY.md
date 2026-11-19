@@ -54,7 +54,7 @@ Invoke-RestMethod http://localhost:8000/api/observability/summary `
 ## 4. HTML 看板
 
 ```powershell
-python scripts/observability_report.py --api http://localhost:8000
+python -m scripts.dev.observability_report --api http://localhost:8000
 ```
 
 输出 `logs/observability.html`，包含：

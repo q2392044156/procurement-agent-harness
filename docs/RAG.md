@@ -54,7 +54,7 @@ changed?since=上次同步时间
 
 - 系统提示新增“知识库回答规则”：只依据片段、必须 `[《标题》第X页]`、无依据必须拒答；
 - 流式结束前强制兜底：有片段但无引用时追加“依据：…”，检索为空时追加“知识库中没有找到依据”；
-- `src/kb/grounding.py` 提供引用合法性校验，测试见 `scripts/test_rag_grounding.py`。
+- `src/kb/grounding.py` 提供引用合法性校验，测试见 `tests/kb/test_grounding.py`。
 
 **入库层**
 
@@ -68,10 +68,10 @@ changed?since=上次同步时间
 **测试**
 
 ```powershell
-python scripts/test_rag_ingestion.py     # OCR/表格/结构化切分/BM25
-python scripts/test_rag_grounding.py     # 引用/拒答校验
-python scripts/test_rag_generation.py    # 真实 Agent 引用与拒答
-python scripts/eval_rag.py               # 混合检索 + 精排评测
+python -m pytest tests/kb/test_ingestion.py -q     # OCR/表格/结构化切分/BM25
+python -m pytest tests/kb/test_grounding.py -q     # 引用/拒答校验
+python -m pytest tests/kb/test_generation.py -q -m live  # 真实 Agent 引用与拒答
+python -m evals.rag.run               # 混合检索 + 精排评测
 ```
 
 
@@ -101,8 +101,8 @@ P1 增强：
 docker run -d --name procuremind-qdrant -p 6333:6333 `
   -v procuremind-qdrant-data:/qdrant/storage qdrant/qdrant:latest
 
-conda run -n procurement python scripts/kb_ingest.py
-conda run -n procurement python scripts/verify_phase_s4.py
+conda run -n procurement python -m scripts.seed.kb_ingest
+conda run -n procurement python -m scripts.verify.s4
 ```
 
 重建索引：删除 `data/kb_state.json`（或把 `since` 置为 1970）后重新执行入库；Qdrant 数据可随时丢弃重建。

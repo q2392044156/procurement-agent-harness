@@ -39,7 +39,7 @@ Noul 检查项固定以 0.5 纳入。检查项质量未单独标注，当前评�
 
 ```bash
 cd /home/administrator/projects/procurement-agent-harness
-.venv/bin/python -m unittest src.test.test_jev_router src.test.test_hybrid_review -q
+.venv/bin/python -m pytest tests/review -q
 # 真实调用，消耗两家 API 额度；先少量连通性验证
 .venv/bin/python -m evals.review_routing.run --smoke --output evals/review_routing/results/my-smoke
 # 一次完整运行；不执行业务工具，每个模型最多 200 次调用

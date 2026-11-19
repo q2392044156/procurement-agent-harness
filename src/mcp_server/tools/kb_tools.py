@@ -6,9 +6,9 @@ import os
 import httpx
 from fastmcp import FastMCP
 
-from ...kb.config import ERP_BASE_URL, INTERNAL_TOKEN
-from ...kb.retriever import search as kb_search_sync
-from ...kb.retriever import visible_documents
+from src.kb.config import ERP_BASE_URL, INTERNAL_TOKEN
+from src.kb.retriever import search as kb_search_sync
+from src.kb.retriever import visible_documents
 
 
 def _current_user_id() -> str:

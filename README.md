@@ -132,7 +132,7 @@ requisition_create / requisition_submit / requisition_cancel / requisition_conve
 - 生成 HTML 可观测性看板：
 
 ```powershell
-python scripts/observability_report.py --api http://localhost:8000
+python -m scripts.dev.observability_report --api http://localhost:8000
 ```
 
 ![可观测性看板](docs/screenshots/07-observability.png)
@@ -145,23 +145,32 @@ python scripts/observability_report.py --api http://localhost:8000
 ```text
 procurement-agent-harness/
 ├── src/
-│   ├── agent/
-│   │   ├── main_agent.py          # LLM / 工具 / 子 Agent / 中间件组装
-│   │   ├── harness.py             # 阶段状态机与 rubric 评审
-│   │   ├── prompts/               # 主提示词与 AGENTS.md
-│   │   ├── memory/                # HOT / WARM / COLD 记忆
-│   │   ├── middlewares/           # 上下文、记忆、沙箱、追踪、HITL
-│   │   ├── subagents/             # 分析、下单两个子 Agent
-│   │   └── tools/                 # MCP 客户端、图表、文档、联网搜索
-│   ├── mcp_server/
-│   │   ├── server_main.py         # MCP SSE 服务
-│   │   └── tools/                 # 52 个采购工具
-│   ├── kb/                        # 解析、切分、bge-m3、Qdrant、检索
-│   ├── api_view/                  # FastAPI、SSE、会话、HITL resume
-│   ├── infra/                     # MongoDB Store 等适配器
-│   ├── skills/                    # 采购技能
-│   └── test/                      # 单元/集成测试
-├── scripts/                       # 语料、入库、启动、门禁、评测
+│   ├── core/                      # 被多层共享的内核：paths / settings / env / logging / contracts
+│   ├── server/                    # 传输层：FastAPI 入口、SSE 路由、会话管理
+│   │   ├── main.py                #   应用入口（python -m src.server.main）
+│   │   ├── settings.py            #   Mongo / 内部令牌等传输层配置
+│   │   ├── sessions.py            #   每用户 Agent 实例与运行锁
+│   │   └── routes/                #   chat（含 HITL resume）/ history / observability
+│   ├── agent/                     # 运行时层：组装 + 编排
+│   │   ├── factory.py             #   LLM / 后端 / 工具 / 子 Agent / 中间件组装
+│   │   ├── bootstrap.py           #   沙箱冷启动填充（项目 + 基础技能）
+│   │   ├── runtime.py             #   请求级上下文（ContextVar）
+│   │   ├── review/                #   阶段状态机、评审策略、路由、执行信号 + rubrics.yaml
+│   │   ├── skills/                #   技能目录、同步/恢复、安装器、只读工具
+│   │   ├── memory/                #   HOT / WARM / COLD 记忆 + 记忆类中间件
+│   │   ├── middlewares/           #   用量统计、工具追踪、工具摘要
+│   │   ├── prompts/               #   主提示词与 AGENTS.md
+│   │   ├── subagents/             #   子 Agent YAML 声明（分析、下单）
+│   │   └── tools/                 #   MCP 加载、图表、文档、HITL、联网、沙箱文件
+│   ├── sandbox/                   # 容器生命周期：manager / holder / proxy / setup / 健康与熔断
+│   ├── observability/             # 单轮 trace 与工具指标
+│   ├── infrastructure/            # 跨层适配器：MongoDBStore
+│   ├── mcp_server/                # MCP 协议适配：server_main + tools（52 个采购工具）
+│   └── kb/                        # RAG：解析、切分、bge-m3、Qdrant、混合检索、引用校验
+├── skills/                        # 技能内容（main/ 通用 + procurement/ 采购），拷进沙箱消费
+├── tests/                         # 单元/集成测试（memory skills review sandbox observability kb tools integration）
+├── scripts/                       # verify/ 阶段门禁 · seed/ 语料入库 · smoke/ 链路冒烟 · dev/ 运维
+├── evals/                         # business/ review_routing/ live/ rag/ security/ 评测脚本与结果
 ├── samples/                       # 制度与工业规范语料
 ├── docs/
 │   ├── screenshots/               # README 使用的界面截图
@@ -170,7 +179,7 @@ procurement-agent-harness/
 │   ├── SKILLS.md
 │   ├── SECURITY.md
 │   └── SECURITY_EVAL.md
-├── evals/security/                # 安全评测结果
+├── pyproject.toml                 # pytest 配置（pythonpath / testpaths）
 ├── Dockerfile
 ├── requirements.txt
 ├── .env.example
@@ -236,7 +245,7 @@ QDRANT_URL=http://localhost:6333
 
 ```powershell
 cd ..\procurement-agent-harness
-.\scripts\build-images.ps1
+.\scripts\dev\build-images.ps1
 ```
 
 只会构建 `procuremind-agent:latest`，MCP 复用同一镜像。
@@ -248,7 +257,7 @@ cd ..\procurement-agent-harness
 首次启动会清空数据库、重建主数据/知识库，并导入演示业务数据：
 
 ```powershell
-.\scripts\reset_demo.ps1 -Agent -WithBusiness
+.\scripts\dev\reset_demo.ps1 -Agent -WithBusiness
 ```
 
 该命令会：
@@ -286,7 +295,7 @@ docker compose --profile agent up -d
 
 ```powershell
 cd ..\procurement-agent-harness
-.\scripts\build-images.ps1
+.\scripts\dev\build-images.ps1
 
 cd ..\smart-procurement-platform
 docker compose --profile agent up -d --force-recreate agent mcp
@@ -356,7 +365,7 @@ Agent 通过平台登录态识别用户，使用平台的演示账号：
 ### 安全评测
 
 ```powershell
-conda run -n procurement python scripts/security_eval.py
+conda run -n procurement python -m evals.security.run
 ```
 
 覆盖 10 类攻击面：内部 API 鉴权、角色提升、IDOR、批量删除/清库存、Prompt 注入写单、系统提示词/密钥提取、知识库 ACL、知识库间接注入、SQL 注入、HITL 拒绝不落库。当前 **10/10 PASS**，详见 [docs/SECURITY_EVAL.md](docs/SECURITY_EVAL.md)。

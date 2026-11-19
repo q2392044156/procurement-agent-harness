@@ -15,5 +15,6 @@ RUN pip install --no-cache-dir \
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src src
+COPY skills skills
 EXPOSE 8000
-CMD ["python", "-m", "src.api_view.web_main"]
+CMD ["python", "-m", "src.server.main"]

@@ -1,0 +1,8 @@
+# 仅放工具配置，不声明 [project]：src/ 不是发行包，运行时靠 PYTHONPATH=/app（见 Dockerfile）。
+[tool.pytest.ini_options]
+# 让 tests/ 里 `import src.x` 与 `import tests.support.*` 都能直接解析，不必再写 sys.path 胶水
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+    "live: 需要真实 LLM / 平台 / Docker，默认不跑",
+]

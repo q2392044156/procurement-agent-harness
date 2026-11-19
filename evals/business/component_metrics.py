@@ -5,20 +5,20 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from langchain_core.messages import SystemMessage
-from src.test.test_memory_layer import FakeStore
+from tests.support.fakes import FakeStore
 from src.agent.memory.keeper import MemoryKeeper
-from src.agent.middlewares.warm_memory import WarmMemoryMiddleware, WARM_MEMORY_SLOT
+from src.agent.memory.middlewares.warm import WarmMemoryMiddleware, WARM_MEMORY_SLOT
 
 
 def main():
     groups = {
         'sandbox_and_isolation': [
-            'src.test.test_sandbox_lifecycle.SandboxProxyTests',
-            'src.test.test_sandbox_lifecycle.HealthRecoveryTests',
-            'src.test.test_sandbox_lifecycle.SkillsLifecycleTests',
-            'src.test.test_sandbox_lifecycle.IsolationTests',
-            'src.test.test_sandbox_lifecycle.MongoNamespaceTests'],
-        'memory_integration': ['src.test.test_memory_integration.MemoryIntegrationTests'],
+            'tests.sandbox.test_lifecycle.SandboxProxyTests',
+            'tests.sandbox.test_lifecycle.HealthRecoveryTests',
+            'tests.sandbox.test_lifecycle.SkillsLifecycleTests',
+            'tests.sandbox.test_lifecycle.IsolationTests',
+            'tests.sandbox.test_lifecycle.MongoNamespaceTests'],
+        'memory_integration': ['tests.memory.test_memory_integration.MemoryIntegrationTests'],
     }
     results = {}
     for label, names in groups.items():

@@ -1,7 +1,7 @@
 """bge-m3 向量化（本地 CPU，惰性加载）。"""
 import os
 
-from .config import EMBEDDING_DEVICE, EMBEDDING_MODEL
+from src.kb.config import EMBEDDING_DEVICE, EMBEDDING_MODEL
 
 _model = None
 
