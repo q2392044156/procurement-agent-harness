@@ -1,0 +1,100 @@
+# Reset demo data: drop platform volumes, restart, re-seed knowledge base.
+# Usage:
+#   .\scripts\reset_demo.ps1            # platform only
+#   .\scripts\reset_demo.ps1 -Agent     # platform + agent profile
+#   .\scripts\reset_demo.ps1 -Agent -WithBusiness  # 同时导入 120 张订单演示数据
+# WARNING: removes MySQL / Redis / MinIO / Mongo / Qdrant volumes.
+
+param(
+    [switch]$Agent,
+    [switch]$SkipKb,
+    [switch]$WithBusiness
+)
+
+$ErrorActionPreference = 'Stop'
+# 脚本位于 scripts/dev/，仓库根在上两级
+$harness = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$root = Split-Path -Parent $harness
+$platform = Join-Path $root 'smart-procurement-platform'
+
+function Invoke-Docker {
+    param([string[]]$DockerArgs)
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    & docker @DockerArgs
+    $code = $LASTEXITCODE
+    $ErrorActionPreference = $previous
+    return $code
+}
+
+if (-not (Test-Path $platform)) {
+    throw "Platform repo not found at $platform"
+}
+
+Set-Location $platform
+$files = @('-f', 'compose.yml')
+if (Test-Path '.demo-override.yml') { $files += @('-f', '.demo-override.yml') }
+$profileArgs = @()
+if ($Agent) { $profileArgs = @('--profile', 'agent') }
+
+Write-Host 'Resetting platform volumes (keeping hf-cache)...'
+$code = Invoke-Docker (@('compose') + $files + $profileArgs + @('down'))
+if ($code -ne 0) { exit $code }
+
+foreach ($volume in @('mysql-data', 'minio-data', 'mongo-data', 'qdrant-data')) {
+    Invoke-Docker @('volume', 'rm', "procuremind_$volume") | Out-Null
+}
+
+Write-Host 'Starting platform...'
+$startArgs = @{}
+if ($Agent) { $startArgs['Agent'] = $true }
+& (Join-Path $platform 'scripts\demo-up.ps1') @startArgs
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Host 'Waiting for backend health...'
+$healthy = $false
+for ($i = 0; $i -lt 120; $i++) {
+    try {
+        $response = Invoke-WebRequest 'http://localhost:8080/actuator/health' -UseBasicParsing -TimeoutSec 3
+        $text = [System.Text.Encoding]::UTF8.GetString($response.Content)
+        if ($text -match 'UP') { $healthy = $true; break }
+    } catch { }
+    Start-Sleep -Seconds 3
+}
+if (-not $healthy) { throw 'Backend did not become healthy in time' }
+
+if ($WithBusiness) {
+    Write-Host 'Applying demo business data...'
+    & (Join-Path $platform 'sql\apply_demo_data.ps1')
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+
+if ($SkipKb) { exit 0 }
+
+$conda = (Get-Command conda -ErrorAction SilentlyContinue).Source
+if (-not $conda -and (Test-Path 'E:\develop\anaconda3\Scripts\conda.exe')) {
+    $conda = 'E:\develop\anaconda3\Scripts\conda.exe'
+}
+if (-not $conda) { throw 'conda not found; activate the procurement env or install conda' }
+
+Set-Location $harness
+$previous = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+
+Write-Host 'Seeding knowledge base documents...'
+& $conda run --no-capture-output -n procurement python -m scripts.seed.seed_kb_documents
+$code = $LASTEXITCODE
+if ($code -ne 0) { $ErrorActionPreference = $previous; exit $code }
+
+Write-Host 'Seeding industrial knowledge base corpus...'
+& $conda run --no-capture-output -n procurement python -m scripts.seed.generate_industrial_corpus
+& $conda run --no-capture-output -n procurement python -m scripts.seed.seed_industrial_kb
+$code = $LASTEXITCODE
+if ($code -ne 0) { $ErrorActionPreference = $previous; exit $code }
+
+Write-Host 'Rebuilding Qdrant index...'
+Remove-Item 'data\kb_state.json' -ErrorAction SilentlyContinue
+& $conda run --no-capture-output -n procurement python -m scripts.seed.kb_ingest
+$code = $LASTEXITCODE
+$ErrorActionPreference = $previous
+exit $code

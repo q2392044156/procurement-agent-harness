@@ -3,7 +3,7 @@ import json
 
 from fastmcp import FastMCP
 
-from ..http_base import erp_client
+from src.mcp_server.http_base import erp_client
 
 
 def register_receipt_tools(mcp: FastMCP):

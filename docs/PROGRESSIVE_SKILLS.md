@@ -30,8 +30,8 @@
 ## 实现与兼容
 
 - `src/agent/progressive_skills.py`：目录发现、frontmatter 解析、读取工具、中间件及子 Agent 接入。
-- `src/agent/main_agent.py`：替换全量正文注入，注册三个工具；`skills=None` 避免与框架内置加载器重复运行。
-- 基础技能读取项目 `src/skills`，用户技能读取 Store 的 `("persisted-skills", user_id)` 命名空间。工具参数不能指定其他用户。
+- `src/agent/factory.py`：替换全量正文注入，注册三个工具；`skills=None` 避免与框架内置加载器重复运行。
+- 基础技能读取项目 `skills/`（仓库根目录），用户技能读取 Store 的 `("persisted-skills", user_id)` 命名空间。工具参数不能指定其他用户。
 - 目录每次模型调用前重新发现，同一缓存 Session 也能看到持久化技能的安装、修改和删除。异步模型调用中的同步发现在线程中执行。
 - 只有 frontmatter 的名称与描述进入目录，不会从正文截取摘要。独立 Markdown 只有显式 description 且同目录没有 SKILL.md 时才视作旧格式技能。
 - SkillsSyncMiddleware / UserSkillsRestoreMiddleware 仍负责沙箱物理文件和依赖。本文的按需加载指进入模型上下文的时机，不是“只有选中技能才下载文件”。
@@ -52,9 +52,9 @@
 在 WSL 项目根目录运行：
 
 ```bash
-.venv/bin/python -m unittest src.test.test_progressive_skills src.test.test_sandbox_lifecycle src.test.test_hybrid_review src.test.test_jev_router src.test.test_memory_integration -q
-.venv/bin/python -m src.test.test_memory_layer
-.venv/bin/python -m src.test.measure_skill_prompt
+.venv/bin/python -m pytest tests/skills tests/sandbox tests/review tests/memory -q
+.venv/bin/python -m tests.memory.test_memory_layer
+.venv/bin/python -m tests.tools.measure_skill_prompt
 ```
 
 本次结果：67 项 unittest（含 19 项新增专项）及 34 项记忆测试通过。覆盖真实 LangChain 同步/异步图、DeepAgents 主 Agent 委派到子 Agent 后按需读取、三层内容进入提示的时机、用户隔离、中文路径、动态更新、分页及路径拒绝。

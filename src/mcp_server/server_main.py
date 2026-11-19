@@ -2,12 +2,7 @@
 MCP Server 入口
 FastMCP 实例创建，注册所有 tools，SSE 传输协议
 """
-import sys
-import os
 import threading
-
-# 确保项目根目录在 path 中
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from fastmcp import FastMCP
 from src.mcp_server.server_config import MCP_HOST, MCP_PORT
@@ -20,7 +15,7 @@ from src.mcp_server.tools.workflow_tools import register_workflow_tools
 from src.mcp_server.tools.receipt_tools import register_receipt_tools
 from src.mcp_server.tools.operations_tools import register_operations_tools
 from src.mcp_server.tools.analytics_tools import register_analytics_tools
-from .tools.kb_tools import register_kb_tools
+from src.mcp_server.tools.kb_tools import register_kb_tools
 
 # 创建 MCP Server 实例
 mcp = FastMCP(

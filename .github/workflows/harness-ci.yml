@@ -29,11 +29,13 @@ jobs:
         run: pip install --index-url https://download.pytorch.org/whl/cpu torch
       - name: Install dependencies
         run: pip install -r requirements.txt
+      - name: Install pytest
+        run: pip install pytest
       - name: Compile Python sources
-        run: python -m compileall -q src
+        run: python -m compileall -q src tests scripts evals
       - name: Memory layer tests
-        run: python -m src.test.test_memory_layer
+        run: python -m tests.memory.test_memory_layer
       - name: Progressive skills tests
-        run: python -m src.test.test_progressive_skills
+        run: python -m pytest tests/skills/test_catalog.py -q
       - name: RAG grounding tests
-        run: python scripts/test_rag_grounding.py
+        run: python -m tests.kb.test_grounding

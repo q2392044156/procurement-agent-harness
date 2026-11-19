@@ -26,10 +26,22 @@
 
 ```powershell
 cd procurement-agent-harness
-.\scripts\build-images.ps1      # docker build --network=host
+.\scripts\dev\build-images.ps1      # docker build --network=host（agent / mcp / sandbox）
 cd ..\smart-procurement-platform
 .\scripts\demo-up.ps1 -Agent
 ```
+
+## 结构重构与联调回归（2026-11-19）
+
+- 项目树重构（`docs/RESTRUCTURE_PLAN.md` P0–P5）：`src/{core,server,agent,sandbox,observability,infrastructure,mcp_server,kb}`
+  + 根 `skills/` + `tests/` + `scripts/{verify,seed,smoke,dev}` + `evals/`；相对导入全部绝对化，
+  `sys.path.insert` 胶水清零，`kb → agent` 反向依赖消除。
+- 与平台端到端联调：`platform_integration_smoke` **13/13 PASS**（只读问答、KB 引用、HITL 建单/拒绝、历史、观测）；
+  `pytest tests` **120 passed**；`check_imports` 130 模块全通。
+- 修掉 6 个改造前既有缺陷：只读 rootfs 下 `put_archive` 失败导致沙箱回退、DeepSeek
+  `response_format=json_schema` 400（评审静默降级）、grader 内部工具泄漏到 SSE 事件、
+  图表链路缺依赖/缺空间/noexec/缺中文字体、100k 输出截断损坏 base64 与 JSON 协议、
+  `download_sandbox_file` 认错容器。详见 `docs/RESTRUCTURE_PLAN.md` 第 7 节。
 
 ## P1 完善（本轮）
 

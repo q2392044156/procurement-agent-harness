@@ -60,10 +60,10 @@ def judge(case,erp,output,interrupts,error=None):
 
 
 async def one(case):
-    from src.agent import main_agent as main
-    from src.agent.config import get_llm
-    from src.agent.schema import ProcurementContext
-    from src.agent.runtime_context import bind_runtime,reset_runtime
+    from src.agent import factory as main
+    from src.core.llm import get_llm
+    from src.core.contracts import ProcurementContext
+    from src.agent.runtime import bind_runtime,reset_runtime
     erp=ERP(case);registry=Registry();usage=Usage();interrupts=[];error=None;output=''
     store=InMemoryStore();state={};started=time.perf_counter()
     with ExitStack() as stack:
@@ -78,12 +78,12 @@ async def one(case):
             # Production prompts, review, skills and HITL kept; no host shell or web tools.
             return create_deep_agent(**kw)
         manager=SimpleNamespace(get_sandbox=lambda *a: (_ for _ in ()).throw(RuntimeError('evaluation uses state-only sandbox')))
-        stack.enter_context(patch.dict('sys.modules',{'src.agent.backends.sandbox_manager':SimpleNamespace(sandbox_manager=manager)}))
+        stack.enter_context(patch.dict('sys.modules',{'src.sandbox.manager':SimpleNamespace(sandbox_manager=manager)}))
         stack.enter_context(patch.object(main,'LocalShellBackend',lambda **kw:StateBackend()))
         stack.enter_context(patch.object(main,'create_deep_agent',safe_builder))
-        stack.enter_context(patch('src.agent.tools.mcp_client.load_mcp_tools_sync',return_value=registry.tools))
+        stack.enter_context(patch('src.agent.tools.mcp_loader.load_mcp_tools_sync',return_value=registry.tools))
         stack.enter_context(patch.object(main,'get_llm',lambda **kw:get_llm(**{**kw,'timeout':60,'max_retries':0})))
-        stack.enter_context(patch('src.agent.jev_router.build_review_router',lambda cfg:get_llm(thinking=False,timeout=15,max_retries=0,max_tokens=400)))
+        stack.enter_context(patch('src.agent.review.router.build_review_router',lambda cfg:get_llm(thinking=False,timeout=15,max_retries=0,max_tokens=400)))
         stack.enter_context(patch.object(main,'MAX_MODEL_CALLS',12));stack.enter_context(patch.object(main,'MAX_TOOL_CALLS',20))
         uid='eval-'+case['id'];tokens=bind_runtime(uid,store)
         try:
@@ -135,7 +135,7 @@ def summarize(rows):
 
 
 async def run(args):
-    from src.agent.config import LLM_API_KEY,LLM_MODEL,LLM_BASE_URL
+    from src.core.llm import LLM_API_KEY,LLM_MODEL,LLM_BASE_URL
     if not LLM_API_KEY:raise SystemExit('Missing local DeepSeek API key')
     if LLM_BASE_URL.rstrip('/') not in ('https://api.deepseek.com','https://api.deepseek.com/v1'):raise SystemExit('Unexpected model endpoint; inspect before running')
     data=extended_cases() if args.extended else cases(args.dev)

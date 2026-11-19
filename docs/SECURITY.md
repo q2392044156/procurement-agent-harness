@@ -28,7 +28,7 @@
 2. 轮换 `JWT_SECRET`、`AGENT_INTERNAL_TOKEN`，`.env` 权限 600；
 3. Qdrant/Mongo 使用独立网络与卷，定期备份；
 4. 为 Agent/MCP 增加网络策略（仅平台后端可访问）；
-5. 上线前跑 `scripts/verify_phase_s7.py` 与平台 P0/P1/P2/KB 脚本。
+5. 上线前跑 `python -m scripts.verify.s7` 与平台 P0/P1/P2/KB 脚本。
 
 ## 4. 已知剩余风险
 

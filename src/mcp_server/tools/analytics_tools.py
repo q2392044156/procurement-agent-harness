@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from fastmcp import FastMCP
 
-from ..http_base import erp_client
+from src.mcp_server.http_base import erp_client
 
 
 def _parse_dt(value) -> datetime | None:

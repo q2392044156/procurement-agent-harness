@@ -4,7 +4,7 @@ inventory_warning / inventory_page / inventory_check / inventory_inbound / inven
 """
 import json
 from fastmcp import FastMCP
-from ..http_base import erp_client
+from src.mcp_server.http_base import erp_client
 
 
 def register_inventory_tools(mcp: FastMCP):

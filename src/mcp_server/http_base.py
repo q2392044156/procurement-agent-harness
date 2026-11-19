@@ -10,7 +10,7 @@ from typing import Optional
 
 import httpx
 
-from .server_config import ERP_BASE_URL, HTTP_TIMEOUT, HTTP_MAX_CONNECTIONS
+from src.mcp_server.server_config import ERP_BASE_URL, HTTP_TIMEOUT, HTTP_MAX_CONNECTIONS
 
 _ERROR_TYPES = {
     400: "bad_request",

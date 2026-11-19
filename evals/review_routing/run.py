@@ -15,11 +15,11 @@ from pathlib import Path
 
 from langchain_core.messages import HumanMessage, AIMessage
 
-from src.agent.env_utils import get_env
-from src.agent.config import get_llm, LLM_MODEL
-from src.agent.harness import load_harness_config
-from src.agent.jev_router import JevRouter
-from src.agent.review_policy import ReviewPolicy, ReviewRoute
+from src.core.env import get_env
+from src.core.llm import get_llm, LLM_MODEL
+from src.agent.review.phase import load_harness_config
+from src.agent.review.router import JevRouter
+from src.agent.review.policy import ReviewPolicy, ReviewRoute
 
 HERE = Path(__file__).parent
 

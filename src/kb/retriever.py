@@ -3,18 +3,11 @@ from __future__ import annotations
 
 import httpx
 
-from .bm25 import load_stats, query_sparse
-from .config import (
-    DEFAULT_TOP_K,
-    ERP_BASE_URL,
-    INTERNAL_TOKEN,
-    MIN_SCORE,
-    QUERY_EXPANSION,
-    RERANK_MIN_SCORE,
-)
-from .embedder import embed_query
-from .reranker import rerank
-from .store import search_hybrid
+from src.kb.bm25 import load_stats, query_sparse
+from src.kb.config import DEFAULT_TOP_K, ERP_BASE_URL, INTERNAL_TOKEN, MIN_SCORE, QUERY_EXPANSION, RERANK_MIN_SCORE
+from src.kb.embedder import embed_query
+from src.kb.reranker import rerank
+from src.kb.store import search_hybrid
 
 _SYNONYMS = {
     "供应商": ["供方", "厂商"],
